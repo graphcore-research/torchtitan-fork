@@ -138,3 +138,9 @@ dmypy.json
 
 # ML tensorboard
 *events.out*
+
+# wandb
+wandb/
+
+# outputs
+outputs/

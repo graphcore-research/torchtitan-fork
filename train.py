@@ -3,6 +3,7 @@
 #
 
 import torch
+import low_bits_training.utils
 import wandb
 
 # First import low_bits_training for MonkeyPatching TorchTitan.
@@ -13,7 +14,8 @@ if __name__ == "__main__":
     print("TRAINING go brrrrr!")
     config = tt_train.JobConfig()
     config.parse_args()
-    wandb.init(project="low-bits-training", entity="graphcore", mode="online", group="test", config=config, sync_tensorboard=True)
+    config_dict = low_bits_training.utils.job_config_to_config_dict(config)
+    wandb.init(project="low-bits-training", entity="graphcore", mode="online", group="test", config=config_dict, sync_tensorboard=True)
     tt_train.main(config)
     torch.distributed.destroy_process_group()
     wandb.finish()
