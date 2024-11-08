@@ -13,3 +13,6 @@ dependencies = [
 dev-dependencies = [
     "pre-commit>=4.0.1",
 ]
+
+[tool.setuptools]
+packages = ["low_bits_training"]
