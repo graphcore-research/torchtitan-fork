@@ -1,4 +1,4 @@
-# Low bits (pre) LLMs training
+# Low bits LLMs (pre-)training
 
 ## Setup
 
@@ -36,6 +36,7 @@ MX numerics training experiments...
 
 * `segfault` on H100 LambdaLabs instances. Update `nvidia-nccl-cu12` to latest: `pip install -U nvidia-nccl-cu12`. Note that `pip` will be warning that it is not compatible with `torch`.
 * `[rank0]:wandb.errors.errors.UsageError: api_key not configured`. Setup Weights & Biases with the command line `wandb login` (requires an API key).
+* `torch.distributed` import error. Outdated version of PyTorch. Make sure you set up your Python virtual env on the local SSD when using LambdaLabs.
 
 ### Resources
 
