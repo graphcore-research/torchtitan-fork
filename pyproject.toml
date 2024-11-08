@@ -15,4 +15,4 @@ dev-dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["low_bits_training"]
+packages = ["low_bits_training", "low_bits_training.datasets", "low_bits_training.models"]
