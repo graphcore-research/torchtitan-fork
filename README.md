@@ -41,6 +41,62 @@ MX numerics training experiments...
 ### Resources
 
 * Guide on debugging GPU networking: https://github.com/stas00/ml-engineering/tree/master/network/debug
+* Pytorch distributed backend NCCL environment variables: https://pytorch.org/docs/stable/distributed.html#other-nccl-environment-variables
+
+### Debugging `torchrun`
+
+#### Debug python code
+
+Add this to your VS Code `launch.json`:
+
+```json
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Module",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "torch.distributed.launch",
+            "env": {"TORCH_LOGS": "+all"},
+            "args": [
+                "--nproc_per_node=1",
+                "--use-env",
+                "--rdzv_backend=c10d",
+                "--rdzv_endpoint=localhost:0",
+                "--local-ranks-filter=0",
+                "--role=rank",
+                "--tee=3",
+                "train.py",
+                "--job.config_file",
+                "./train_configs/debug_model.toml"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
+```
+
+### GDB with distributed torch (find where a segfault is)
+
+On the command line, first install the python debug symbols with `sudo apt install gdb python3-dbg`
+
+```console
+$ gdb --args python -m torch.distributed.launch --nproc_per_node=1 --use-env --rdzv_backend c10d --rdzv_endpoint=localhost:0 --local-ranks-filter 0 --role rank --tee 3 train.py --job.config_file ./train_configs/debug_model.toml
+set detach-on-fork off      # gdb stays attached to subprocesses (but only 1 at a time runs)
+set follow-fork-mode child      # Follow the child
+run
+```
+
+Then execute individual programs and threads (inferiors) as needed to reach the segfault
+see [Documentation on inferiors and programs](https://www.zeuthen.desy.de/unix/unixguide/infohtml/gdb/Inferiors-and-Programs.html).
+Useful GDB commands:
+
+* `info inferior`: list inferiors
+* `inferior N`: move to that inferior to inspect/execute it.
 
 ## Local development
 
