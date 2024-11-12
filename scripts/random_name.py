@@ -1,0 +1,36 @@
+import random
+
+# Lists of words that can be combined "meaningfully"
+adjectives = [
+    "swift", "bright", "cosmic", "crystal", "cyber", "digital", "echo",
+    "fusion", "global", "hyper", "infinite", "lunar", "mega", "neo",
+    "orbital", "prime", "quantum", "rapid", "solar", "tech", "ultra",
+    "vector", "wave", "xenon", "zero",
+    "new", "good", "high", "old", "great", "big", "small", "dark", "deep", "fast",
+    "slow", "hard", "soft", "hot", "cold", "full", "pure", "blue", "red", "green",
+    "wise", "free", "true", "safe", "rich", "real", "wild", "calm", "kind", "bold",
+]
+
+nouns = [
+    "time", "way", "year", "work", "day", "part", "case", "point", "group", "world",
+    "hand", "eye", "place", "week", "game", "line", "end", "word", "fact",
+    "head", "code", "data", "type", "food", "fish", "bird", "book", "fire", "star",
+    "tree", "path", "king", "wind", "mind", "door", "rock", "edge", "core", "wave",
+    "apex", "beacon", "core", "drive", "edge", "flux", "grid",
+    "hub", "index", "jet", "key", "link", "matrix", "nexus",
+    "orbit", "pulse", "quest", "ray", "sphere", "trace", "unit",
+    "void", "wave", "zone", "path"
+]
+
+def generate_word_pair():
+    """Generate a random pair of words by combining an adjective and a noun"""
+    adj = random.choice(adjectives)
+    noun = random.choice(nouns)
+    return f"{adj.lower()}-{noun.lower()}-{random.randint(10,99)}"
+
+def main():
+    # Generate and print a random word pair
+    print(generate_word_pair())
+
+if __name__ == "__main__":
+    main()

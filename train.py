@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2024 Graphcore Ltd. All rights reserved.
 #
+import os
 
 import torch
 import wandb
@@ -18,14 +19,15 @@ def main():
     # Logging in W&B? TODO: custom config flag.
     enable_wb_logging = config.metrics.enable_tensorboard
     if enable_wb_logging:
+        torch.distributed.broadcast
         config_dict = low_bits_training.utils.job_config_to_config_dict(config)
         wandb.init(
-            project="low-bits-training",
+            project="low-bits-training-dev",
             entity="graphcore",
             mode="online",
             config=config_dict,
             sync_tensorboard=True,
-            group="torchtitan",
+            group=os.getenv("WANDB_GROUP_ID"),
         )
     # Main TorchTitan training setup & loop
     tt_train.main(config)
