@@ -2,23 +2,36 @@
 # Copyright (c) 2024 Graphcore Ltd. All rights reserved.
 #
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
+import torch
+import torch.distributed._functional_collectives as funcol
+import torch.distributed.distributed_c10d as c10d
 import torch.nn as nn
+from torch.distributed.device_mesh import DeviceMesh
 
 import torchtitan
-from torchtitan.metrics import JobConfig, ParallelDims
+from torchtitan.metrics import JobConfig
 from torchtitan.metrics import build_metric_logger as tt_build_metric_logger
 from torchtitan.optimizer import build_lr_schedulers as tt_build_lr_schedulers
 from torchtitan.optimizer import build_optimizers as tt_build_optimizers
+from torchtitan.parallelisms import ParallelDims as ttParallelDims
 
 _logger_model_cache: Dict[str, Any] = {
     "model": None,
     "optimizer": None,
     "lr_scheduler": None,
+    "device_mesh": None,
 }
 """Logger model (global) cache. A bit hacky, but useful for extracting additional metrics.
 """
+
+
+class ParallelDims(ttParallelDims):
+    def build_mesh(self, device_type) -> DeviceMesh:
+        mesh = super().build_mesh(device_type)
+        _logger_model_cache["device_mesh"] = mesh
+        return mesh
 
 
 def append_model_metrics(
@@ -50,6 +63,18 @@ def append_lr_scheduler_metrics(
     return metrics
 
 
+def dist_sum(x: Union[int, float], mesh: DeviceMesh) -> float:
+    tensor = torch.tensor(x).cuda()
+    return funcol.all_reduce(tensor, reduceOp=c10d.ReduceOp.SUM.name, group=mesh).item()
+
+
+def append_total_wps_metrics(metrics: Dict[str, Any], mesh: DeviceMesh):
+    if "wps" in metrics:
+        metrics["total_wps"] = dist_sum(metrics["wps"], mesh)
+    print(metrics)
+    return metrics
+
+
 class MetricLogger:
     """General metric logger, wrapping TorchTitan one.
 
@@ -75,6 +100,7 @@ class MetricLogger:
         metrics = append_lr_scheduler_metrics(
             metrics, _logger_model_cache["lr_scheduler"]
         )
+        metrics = append_total_wps_metrics(metrics, _logger_model_cache["device_mesh"])
         self._internal_tt_logger.log(metrics, step)
 
     def close(self):
@@ -111,3 +137,4 @@ def build_lr_schedulers(optimizers, job_config: JobConfig):
 # Patching factory methods to keep track of optimizers & LR schedulers.
 torchtitan.optimizer.build_optimizers = build_optimizers
 torchtitan.optimizer.build_lr_schedulers = build_lr_schedulers
+torchtitan.parallelisms.ParallelDims = ParallelDims
