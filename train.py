@@ -3,14 +3,15 @@
 #
 
 import torch
+import wandb
 
 # First import low_bits_training for MonkeyPatching TorchTitan.
 import low_bits_training  # noqa: F401
 import low_bits_training.utils
-import wandb
 from torchtitan import train as tt_train
 
-if __name__ == "__main__":
+
+def main():
     print("TRAINING go brrrrr!")
     config = tt_train.JobConfig()
     config.parse_args()
@@ -24,9 +25,14 @@ if __name__ == "__main__":
             mode="online",
             config=config_dict,
             sync_tensorboard=True,
+            group="torchtitan",
         )
     # Main TorchTitan training setup & loop
     tt_train.main(config)
     torch.distributed.destroy_process_group()
     if enable_wb_logging:
         wandb.finish()
+
+
+if __name__ == "__main__":
+    main()
