@@ -71,7 +71,6 @@ def dist_sum(x: Union[int, float], mesh: DeviceMesh) -> float:
 def append_total_wps_metrics(metrics: Dict[str, Any], mesh: DeviceMesh):
     if "wps" in metrics:
         metrics["total_wps"] = dist_sum(metrics["wps"], mesh)
-    print(metrics)
     return metrics
 
 
