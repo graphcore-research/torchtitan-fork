@@ -2,14 +2,14 @@
 # Copyright (c) 2024 Graphcore Ltd. All rights reserved.
 #
 import os
-from typing import Dict
+from typing import Dict, Any
 
 from torchtitan.torchtitan.config_manager import JobConfig
 from torchtitan.torchtitan.metrics import _get_metrics_rank
 from torchtitan.torchtitan.parallelisms.parallel_dims import ParallelDims
 
 
-def job_config_to_config_dict(job_config: JobConfig) -> Dict[str, Dict[str, str]]:
+def job_config_to_config_dict(job_config: JobConfig) -> Dict[str, Dict[str, Any]]:
     """
     JobConfig is created from Argument Parser as a two level object.
 

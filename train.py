@@ -25,12 +25,20 @@ def main():
         config_dict = low_bits_training.utils.job_config_to_config_dict(config)
 
         group_id = os.getenv("WANDB_GROUP_ID")
+        training_run_id = os.getenv("WANDB_TRAINING_RUN_ID")
+        rank = os.environ["RANK"]
+        config_dict["metadata"] = {
+            "training_run_id": training_run_id,
+            "rank": int(rank),
+            "local_rank": int(os.environ["LOCAL_RANK"]),
+        }
         wandb.init(
             project="low-bits-training",
             entity="graphcore",
             mode="online",
             config=config_dict,
             sync_tensorboard=True,
+            name=f"{training_run_id}:rank_{rank}",
             group=group_id,
         )
     # Main TorchTitan training setup & loop
