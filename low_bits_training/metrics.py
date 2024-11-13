@@ -11,8 +11,8 @@ import torch.nn as nn
 from torch.distributed.device_mesh import DeviceMesh
 
 import torchtitan
+import wandb
 from torchtitan.metrics import JobConfig
-from torchtitan.metrics import build_metric_logger as tt_build_metric_logger
 from torchtitan.optimizer import build_lr_schedulers as tt_build_lr_schedulers
 from torchtitan.optimizer import build_optimizers as tt_build_optimizers
 from torchtitan.parallelisms import ParallelDims as ttParallelDims
@@ -79,10 +79,12 @@ def append_total_wps_metrics(metrics: Dict[str, Any], mesh: DeviceMesh):
     return metrics
 
 
-class MetricLogger:
-    """General metric logger, wrapping TorchTitan one.
+class WBMetricLogger:
+    """Weight & Biases metric logger, following the same interface as
+    TorchTitan Tensorboard `MetricLogger`.
 
-    Allowing use captured of model, optimizer and LR scheduler to log additional metrics.
+    In addition to sending logs directly to W&B, we capture model,
+    optimizer, LR schedule and device mesh to allow additional metrics to be logged.
     """
 
     def __init__(
@@ -91,13 +93,11 @@ class MetricLogger:
         parallel_dims: ParallelDims,
         tag: Optional[str] = None,
     ):
-        self._internal_tt_logger = tt_build_metric_logger(
-            job_config, parallel_dims, tag
-        )
         self._parallel_dims = parallel_dims
         self._job_config = job_config
 
     def log(self, metrics: Dict[str, Any], step: int):
+        """Compute additional metrics on top of standard TorchTitan ones + W&B logging."""
         # Additional custom metrics.
         metrics = append_model_metrics(metrics, _logger_model_cache.get("model"))
         metrics = append_optimizer_metrics(
@@ -109,21 +109,23 @@ class MetricLogger:
         metrics = append_total_wps_metrics(
             metrics, _logger_model_cache.get("device_mesh")
         )
-        self._internal_tt_logger.log(metrics, step)
+        # Direct log into W&B.
+        # NOTE: no-op if this process W&B has been initialized with `mode=disabled`.
+        wandb.log(metrics, step=step)
 
     def close(self):
-        self._internal_tt_logger.close()
         # Clearing the cache, to make sure no reference is held which could mess up with teardown.
         _logger_model_cache.clear()
 
 
 def build_metric_logger(
     job_config: JobConfig, parallel_dims: ParallelDims, tag: Optional[str] = None
-) -> MetricLogger:
+) -> WBMetricLogger:
     """Wrapping of TorchTitan `build_metric_logger` factory method, allowing
-    for additional features/config.
+    to build directly our own W&B metric logger.
     """
-    return MetricLogger(job_config, parallel_dims, tag)
+    # TODO: keep the option to start Tensorboard one?
+    return WBMetricLogger(job_config, parallel_dims, tag)
 
 
 # Monkey-patching original TorchTitan facotory method.

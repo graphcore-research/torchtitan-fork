@@ -23,7 +23,7 @@ pip3 install --force-reinstall --pre torch --index-url https://download.pytorch.
 
 Using C4 test dataset and the debug model:
 ```bash
-NGPU=1 ./run_llama_train.sh  # or NGPU=8
+WANDB_MODE=disabled NGPU=1 ./run_llama_train.sh  # or NGPU=8
 ```
 Please see the [Troubleshooting](#troubleshooting) section below in case this script does not run properly.
 
