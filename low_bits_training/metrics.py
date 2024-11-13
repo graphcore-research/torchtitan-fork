@@ -114,7 +114,7 @@ class MetricLogger:
     def close(self):
         self._internal_tt_logger.close()
         # Clearing the cache, to make sure no reference is held which could mess up with teardown.
-        self._logger_model_cache.clear()
+        _logger_model_cache.clear()
 
 
 def build_metric_logger(
