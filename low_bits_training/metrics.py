@@ -30,6 +30,7 @@ _logger_model_cache: Dict[str, Any] = {
 class ParallelDims(ttParallelDims):
     def build_mesh(self, device_type) -> DeviceMesh:
         mesh = super().build_mesh(device_type)
+        # Specializing `build_mesh` to cache the device mesh used in training.
         _logger_model_cache["device_mesh"] = mesh
         return mesh
 
@@ -64,12 +65,16 @@ def append_lr_scheduler_metrics(
 
 
 def dist_sum(x: Union[int, float], mesh: DeviceMesh) -> float:
+    # funcol.all_reduce only supporting 1D mesh
+    if mesh.size() == 1:
+        return x
     tensor = torch.tensor(x).cuda()
     return funcol.all_reduce(tensor, reduceOp=c10d.ReduceOp.SUM.name, group=mesh).item()
 
 
 def append_total_wps_metrics(metrics: Dict[str, Any], mesh: DeviceMesh):
     if "wps" in metrics:
+        # Summing accross the full mess to get "raw" wps
         metrics["total_wps"] = dist_sum(metrics["wps"], mesh)
     return metrics
 
@@ -94,16 +99,22 @@ class MetricLogger:
 
     def log(self, metrics: Dict[str, Any], step: int):
         # Additional custom metrics.
-        metrics = append_model_metrics(metrics, _logger_model_cache["model"])
-        metrics = append_optimizer_metrics(metrics, _logger_model_cache["optimizer"])
-        metrics = append_lr_scheduler_metrics(
-            metrics, _logger_model_cache["lr_scheduler"]
+        metrics = append_model_metrics(metrics, _logger_model_cache.get("model"))
+        metrics = append_optimizer_metrics(
+            metrics, _logger_model_cache.get("optimizer")
         )
-        metrics = append_total_wps_metrics(metrics, _logger_model_cache["device_mesh"])
+        metrics = append_lr_scheduler_metrics(
+            metrics, _logger_model_cache.get("lr_scheduler")
+        )
+        metrics = append_total_wps_metrics(
+            metrics, _logger_model_cache.get("device_mesh")
+        )
         self._internal_tt_logger.log(metrics, step)
 
     def close(self):
         self._internal_tt_logger.close()
+        # Clearing the cache, to make sure no reference is held which could mess up with teardown.
+        self._logger_model_cache.clear()
 
 
 def build_metric_logger(

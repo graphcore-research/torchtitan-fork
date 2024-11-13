@@ -4,7 +4,7 @@
 
 If required, setup a new Python environment:
 ```bash
-python3 -v venv env
+python3 -m venv env
 source env/bin/activate
 ```
 

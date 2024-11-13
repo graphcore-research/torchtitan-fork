@@ -4,11 +4,11 @@
 import os
 
 import torch
+import wandb
 
 # First import low_bits_training for MonkeyPatching TorchTitan.
 import low_bits_training  # noqa: F401
 import low_bits_training.utils
-import wandb
 from torchtitan import train as tt_train
 
 
