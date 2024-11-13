@@ -1,6 +1,8 @@
 #
 # Copyright (c) 2024 Graphcore Ltd. All rights reserved.
 #
+import os
+
 import torch
 
 # First import low_bits_training for MonkeyPatching TorchTitan.
@@ -18,7 +20,7 @@ def main():
     # W&B init for model metrics & checkpoint.
     low_bits_training.utils.wandb_init(
         job_config=config,
-        project="low-bits-training",
+        project=os.getenv("WANDB_PROJECT", "low-bits-training"),
         entity="graphcore",
     )
     # Main TorchTitan training setup & loop
