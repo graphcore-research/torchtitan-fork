@@ -6,7 +6,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=2.1.2",
-    "wandb"
+    "zstandard",
+    "wandb",
 ]
 
 [tool.uv]
