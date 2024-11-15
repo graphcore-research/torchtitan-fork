@@ -36,7 +36,26 @@ Please see the [Troubleshooting](#troubleshooting) section below in case this sc
 
 ## Training
 
-MX numerics training experiments...
+## Locally, for 1-8 GPUs setup
+
+For training directly on a server with 1-8 GPUs, use the following script (directly calling `torchrun`):
+```bash
+CONFIG_FILE=xxx.toml NGPU=8 ./run_llama_train.sh
+```
+
+## GPU cluster, using `slurm`
+
+For training on GPU cluster, you will need to `git clone` the repository in a network filesystem shared between the compute nodes (e.g. `/data` on LambdaLabs). Then, setup a couple of environnment variable inside a `.env` file:
+```bash
+export HF_TOKEN=hf_         # HF token for getting the tokenizer
+export WANDB_API_KEY=...    # WANDB key for experiments logging
+export GC_USER=alexandrep   # Graphcore username for virtual env
+```
+
+Then you launch the training with:
+```bash
+WANDB_PROJECT=some-other-project CONFIG_FILE=xxx.toml bash submit.sh
+```
 
 
 ## Troubleshooting
