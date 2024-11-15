@@ -8,16 +8,23 @@ python3 -m venv env
 source env/bin/activate
 ```
 
+Get submodules
+```
+git submodule update --init --recursive
+```
+
 Editable install of `low-bits-training` package, and `torchtitan` requirements:
 ```bash
 pip install -e ./
 pip install -r ./torchtitan/requirements.txt
 ```
 
-Following `torchtitan` readme install, you may need to install the latest nightly PyTorch:
+Following `torchtitan/README.md` (See "Installation"), you may need to install the latest nightly PyTorch:
 ```bash
 pip3 install --force-reinstall --pre torch --index-url https://download.pytorch.org/whl/nightly/cu124 # or cu118, cu121
 ```
+
+And you will need to get a tokeniser (again see `torchtitan/README.md`, "Downloading a tokenizer").
 
 ### Testing the install on a single/multiple accelerator(s)
 
