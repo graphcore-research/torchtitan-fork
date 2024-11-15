@@ -143,4 +143,6 @@ dmypy.json
 wandb/
 
 # outputs
-outputs/
+outputs*/
+
+slurm-*.out

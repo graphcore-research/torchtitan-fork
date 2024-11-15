@@ -24,10 +24,12 @@ def main():
         entity="graphcore",
     )
     # Main TorchTitan training setup & loop
-    tt_train.main(config)
-    torch.distributed.destroy_process_group()
+    try:
+        tt_train.main(config)
+        torch.distributed.destroy_process_group()
+    finally:
     # Note keeping W&B init + finish in `main` for clean exception handling.
-    wandb.finish()
+        wandb.finish()
 
 
 if __name__ == "__main__":
