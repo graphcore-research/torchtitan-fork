@@ -104,9 +104,7 @@ class WBMetricLogger:
         """Compute additional metrics on top of standard TorchTitan ones + W&B logging."""
         # Additional custom metrics.
         metrics = append_model_metrics(metrics, _logger_model_cache.get("model"))
-        metrics = append_optimizer_metrics(
-            metrics, _logger_model_cache.get("optimizer")
-        )
+        metrics = append_optimizer_metrics(metrics, _logger_model_cache.get("optimizer"))
         metrics = append_lr_scheduler_metrics(
             metrics, _logger_model_cache.get("lr_scheduler")
         )

@@ -4,25 +4,26 @@
 import os
 from typing import List, Optional
 
-import torchtitan.datasets.hf_datasets
-from torchtitan.datasets.hf_datasets import _supported_datasets, HuggingFaceDataset
-from torchtitan.datasets.tokenizer import Tokenizer
-from torchtitan.logging import logger
 from datasets import load_dataset
 from datasets.distributed import split_dataset_by_node
 
+import torchtitan.datasets.hf_datasets
+from torchtitan.datasets.hf_datasets import HuggingFaceDataset, _supported_datasets
+from torchtitan.datasets.tokenizer import Tokenizer
+from torchtitan.logging import logger
 
 # FIX path of TorchTitan datasets to absolute.
 tt_basedir = os.path.abspath(os.path.dirname(__file__) + "../../../torchtitan")
-_supported_datasets = {
+_supported_datasets = {  # noqa: F811
     "c4_test": os.path.join(tt_basedir, "test/assets/c4_test"),
     "c4": "allenai/c4",
     "slimpajama": "cerebras/SlimPajama-627B",
 }
 
+
 class ModifiedHuggingFaceDataset(HuggingFaceDataset):
     """Modified version of the `HuggingFaceDataset` class.
-    
+
     The only differences introduced are changes around how `load_dataset()` is called
     to support datasets other than C4, and a new `_supported_datasets` dict with a
     path to the (streamed) `cerebras/SlimPajama-627B` dataset."""
@@ -71,5 +72,6 @@ class ModifiedHuggingFaceDataset(HuggingFaceDataset):
         # variables for checkpointing
         self._sample_idx = 0
         self._all_tokens: List[int] = []
+
 
 torchtitan.datasets.hf_datasets.HuggingFaceDataset = ModifiedHuggingFaceDataset

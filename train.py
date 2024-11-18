@@ -28,7 +28,7 @@ def main():
         tt_train.main(config)
         torch.distributed.destroy_process_group()
     finally:
-    # Note keeping W&B init + finish in `main` for clean exception handling.
+        # Note keeping W&B init + finish in `main` for clean exception handling.
         wandb.finish()
 
 

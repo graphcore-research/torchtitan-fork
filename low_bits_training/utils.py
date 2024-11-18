@@ -19,9 +19,7 @@ def job_config_to_config_dict(job_config: JobConfig) -> Dict[str, Dict[str, Any]
 
     """
     first_level_args = [
-        attr
-        for attr in dir(job_config)
-        if not (attr.startswith("_") or "parse" in attr)
+        attr for attr in dir(job_config) if not (attr.startswith("_") or "parse" in attr)
     ]
     config_dict = {}
     for arg1 in first_level_args:
