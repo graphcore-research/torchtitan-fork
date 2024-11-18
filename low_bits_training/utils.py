@@ -73,7 +73,7 @@ def wandb_logging_mode(job_config: JobConfig) -> str:
     to decide whether the process should `online` or `disabled`.
     """
     # By default, online on processes where logging is activated.
-    wb_mode = os.getenv("WANDB_MODE", "online")
+    wb_mode = job_config.wandb.mode
     # Only forward the default mode on processes logging is enabled.
     return wb_mode if is_metrics_logging_enabled(job_config) else "disabled"
 
@@ -83,8 +83,8 @@ def wandb_init(job_config: JobConfig, project: str, entity: str):
     config_dict = job_config_to_config_dict(job_config)
 
     rank = os.environ["RANK"]
-    wb_group_id = os.getenv("WANDB_GROUP_ID", None)
-    wb_training_run_id = os.getenv("WANDB_TRAINING_RUN_ID")
+    wb_group_id = job_config.wandb.group
+    wb_training_run_id = job_config.wandb.name
     # Standardize naming of the run, based on training name and rank.
     wb_run_name = f"{wb_training_run_id}:rank_{rank}"
     # Additional metadata to record on W&B.
