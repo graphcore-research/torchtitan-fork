@@ -9,5 +9,7 @@ export WANDB_TRAINING_RUN_ID="${WANDB_TRAINING_RUN_ID:-$(python scripts/random_n
 export WANDB_API_KEY="${WANDB_API_KEY}"
 export HF_TOKEN="${HF_TOKEN}"
 export GC_USER="${GC_USER}"
-echo $WANDB_TRAINING_RUN_ID
+
+echo "W&B project URL: 'https://wandb.ai/graphcore/${WANDB_PROJECT}'"
+echo "W&B training run ID: '${WANDB_TRAINING_RUN_ID}'"
 sbatch multinode_trainer.slurm

@@ -13,15 +13,19 @@ Get submodules
 git submodule update --init --recursive
 ```
 
-Editable install of `low-bits-training` package, and `torchtitan` requirements:
+Editable install of `low-bits-training` package (which includes `torchtitan` dependencies):
 ```bash
 pip install -e ./
-pip install -r ./torchtitan/requirements.txt
+# On H100, you will need to update NCCL library to avoid segfault
+pip install "nvidia-nccl-cu12>=2.23.4"
 ```
 
-Following `torchtitan/README.md` (See "Installation"), you may need to install the latest nightly PyTorch:
+The install process is similar with `uv`:
 ```bash
-pip3 install --force-reinstall --pre torch --index-url https://download.pytorch.org/whl/nightly/cu124 # or cu118, cu121
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv venv
+uv pip install -e .
+uv pip install "nvidia-nccl-cu12>=2.23.4"
 ```
 
 And you will need to get a tokeniser (again see `torchtitan/README.md`, "Downloading a tokenizer").

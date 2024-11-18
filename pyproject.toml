@@ -5,9 +5,23 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "numpy>=2.1.2",
+    # TorchTitan dependencies.
+    "torchdata >= 0.8.0",
+    "datasets >= 2.21.0",
+    "tomli >= 1.1.0 ; python_version < \"3.11\"",
+    "tensorboard",
+    "sentencepiece",
+    "tiktoken",
+    "blobfile",
+    "tabulate",
+    # Low-bits-training dependencies.
+    "numpy >= 2.1.2",
+    "torch >= 2.5.1",
     "zstandard",
     "wandb",
+    # NCCL H100 cluster fix
+    # Issue with resolving dependencies
+    # "nvidia-nccl-cu12>=2.23.4",
 ]
 
 [tool.uv]

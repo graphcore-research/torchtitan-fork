@@ -52,6 +52,6 @@ export CUDA_LAUNCH_BLOCKING=0
 # export NCCL_BUFFSIZE=2097152
 #export TORCH_DIST_INIT_BARRIER=1
 # export FI_EFA_SET_CUDA_SYNC_MEMOPS=0
-export CONFIG_FILE=${CONFIG_FILE:-"./train_configs/debug_model_multi_node.toml"}
+export CONFIG_FILE=${CONFIG_FILE:-"./train_configs/debug_model.toml"}
 
 srun ./train_multinode.sh

@@ -1,4 +1,10 @@
 #!/bin/bash
+
+# Installing `uv` for Python env management.
+if ! [ -x "$(command -v uv)" ]; then
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
 # Read local env. (GC USER, ...) if existing.
 if [ -f .env ]; then
   source .env
@@ -6,6 +12,7 @@ fi
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null && pwd)
 
+# TODO: a bit of a cleaner solution for a volatile directory.
 TMP_DIR=${HOME}/${GC_USER}-tmp
 VIRTUAL_ENV_DIR="${TMP_DIR}/.venv${1}"
 mkdir -p $TMP_DIR
