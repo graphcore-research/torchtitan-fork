@@ -3,6 +3,7 @@
 #
 import os
 from typing import List, Optional
+import json
 
 from datasets import load_dataset
 from datasets.distributed import split_dataset_by_node
@@ -38,6 +39,16 @@ class ModifiedHuggingFaceDataset(HuggingFaceDataset):
         rank: int = 0,
         infinite: bool = False,
     ) -> None:
+        dataloading_kwargs = {}
+        if ":" in dataset_name:
+            dataset_name, dataloading_mode = dataset_name.split(":", maxsplit=1)
+            dataloading_kwargs = json.loads(dataloading_mode)
+            if not isinstance(dataloading_kwargs, dict):
+                raise ValueError(
+                    r"Argument dataset_name must be a supported dataset, "
+                    "or a supported dataset followed by arguments to HF datasets.load_dataset"
+                    r' method in JSON format: <dataset_name>:{"stream": true, ...}'
+                )
         print(f"USING MODIFIED DATASET CLASS. DATASET: {dataset_name=}")
         # allow user to pass in a (local or HF hub) path to use unsupported datasets
         if dataset_name not in _supported_datasets:
@@ -57,10 +68,12 @@ class ModifiedHuggingFaceDataset(HuggingFaceDataset):
         logger.info(f"Preparing {dataset_name} dataset from {dataset_path}")
 
         if dataset_name == "c4_test":
-            ds = load_dataset(dataset_path, split="train")
+            ds = load_dataset(dataset_path, split="train", **dataloading_kwargs)
         else:
             name = "en" if dataset_name == "c4" else "default"
-            ds = load_dataset(dataset_path, name=name, split="train", streaming=True)
+            ds = load_dataset(
+                dataset_path, name=name, split="train", **dataloading_kwargs
+            )
 
         # TODO: support shuffling
         self.dataset_name = dataset_name
