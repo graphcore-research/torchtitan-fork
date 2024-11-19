@@ -117,6 +117,10 @@ class JobConfig(TTJobConfig):
         self.combine_args()
         self._validate_config()
 
+        # If W&B training run name setup, append to output directory.
+        if len(self.wandb.name):
+            self.job.dump_folder = os.path.join(self.job.dump_folder, self.wandb.name)
+
 
 def _override(args_dict, overrides_dict):
     """A generic function for providing overrides from other dicts"""
