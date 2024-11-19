@@ -34,6 +34,24 @@ class JobConfig(TTJobConfig):
             default="online",
             help="Wandb logging mode",
         )
+        self.parser.add_argument(
+            "--training.dataloading_args",
+            type=str,
+            default=None,
+            help=(
+                "JSON arguments to pass to W&B load_dataset method when creating the dataset."
+                'For example to enable dataset streaming pass: {"streaming": true} (Note the " quotes)'
+            ),
+        )
+
+    def combine_args(self):
+        """Certain arguments are combined into a single argument for compatibility
+        with the Torchtitan training script."""
+        if self.training.dataloading_args is not None:
+            self.training.dataset = (
+                f"{self.training.dataset}:{self.training.dataloading_args}"
+            )
+        return self
 
     def parse_args_from_env_vars(self, args_list) -> argparse.Namespace:
         """
@@ -65,7 +83,8 @@ class JobConfig(TTJobConfig):
 
         Modified from torchtitan to insert environment variable override
         """
-        env_args = self.parse_args_from_env_vars(args_list)
+        # List all arguments from the parser to get the env var names
+        env_args = self.parse_args_from_env_vars([a.dest for a in self.parser._actions])
         args, cmd_args = self.parse_args_from_command_line(args_list)
         config_file = getattr(args, "job.config_file", None)
 
@@ -95,6 +114,7 @@ class JobConfig(TTJobConfig):
         for k, v in args_dict.items():
             class_type = type(k.title(), (), v)
             setattr(self, k, class_type())
+        self.combine_args()
         self._validate_config()
 
 

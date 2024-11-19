@@ -43,6 +43,9 @@ class ModifiedHuggingFaceDataset(HuggingFaceDataset):
         if ":" in dataset_name:
             dataset_name, dataloading_mode = dataset_name.split(":", maxsplit=1)
             dataloading_kwargs = json.loads(dataloading_mode)
+            logger.info(
+                f"Using dataset {dataset_name} with arguments: {dataloading_kwargs}"
+            )
             if not isinstance(dataloading_kwargs, dict):
                 raise ValueError(
                     r"Argument dataset_name must be a supported dataset, "

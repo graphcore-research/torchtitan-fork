@@ -26,6 +26,7 @@ norm_type = "rmsnorm"  # layernorm / np_layernorm / rmsnorm / fused_rmsnorm
 # test tokenizer.model, for debug purpose only
 tokenizer_path = "./torchtitan/test/assets/test_tiktoken.model"
 
+
 [optimizer]
 name = "AdamW"
 lr = 8e-4
@@ -35,12 +36,13 @@ batch_size = 8
 seq_len = 2048
 warmup_steps = 2  # lr scheduler warm up, normally 20% of the train steps
 max_norm = 1.0  # grad norm clipping
-steps = 10
+steps = 50
 data_parallel_replicate_degree = 1
 data_parallel_shard_degree = -1
 tensor_parallel_degree = 1
 compile = false
-dataset = "c4_test"  # supported datasets: c4_test (2K), c4 (177M)
+dataset = "c4_test"
+# dataloading_args='{"streaming": true}'
 
 [experimental]
 pipeline_parallel_degree = 1
@@ -61,3 +63,6 @@ selective_ac_option = '2'  # 'int' = ac every positive int layer or 'op', ac bas
 
 [float8]
 enable_float8_linear = false
+
+[wandb]
+project = "low-bits-training-debug"
