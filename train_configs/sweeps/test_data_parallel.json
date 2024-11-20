@@ -1,0 +1,6 @@
+{
+    "command": "CONFIG_FILE=train_configs/debug_model.toml bash submit.sh",
+    "parameters": {
+        "training.data_parallel_replicate_degree": {"values": [2, 4, 8, 16]}
+    }
+}
