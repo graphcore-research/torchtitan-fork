@@ -9,6 +9,7 @@ import low_bits_training.utils
 import wandb
 from low_bits_training.config_manager import JobConfig
 from torchtitan import train as tt_train
+from torchtitan.logging import logger
 
 
 def main():
@@ -26,6 +27,12 @@ def main():
     try:
         tt_train.main(config)
         torch.distributed.destroy_process_group()
+    except Exception as e:
+        # Error logging before process ends, to record in W&B.
+        # Keeping formatting similar to `torchrun` error output.
+        logger.error("--- Logging error --")
+        logger.error(f"{type(e).__module__}.{type(e).__qualname__}: {e}", exc_info=True)
+        raise
     finally:
         # Note keeping W&B init + finish in `main` for clean exception handling.
         wandb.finish()
