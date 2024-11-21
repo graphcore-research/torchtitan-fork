@@ -47,7 +47,6 @@ def sync_between_nodes(source_path, source_host, dest_path, dest_host):
 
 
 def main(args):
-
     run = wandb.init(
         entity=args.entity,
         project=args.project,

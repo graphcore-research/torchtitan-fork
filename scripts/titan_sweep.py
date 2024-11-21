@@ -17,6 +17,7 @@ Usage:
  python sweep.py --config '{"command":"./train.sh", ...}' # JSON string
 
 """
+
 import json
 import argparse
 from itertools import product

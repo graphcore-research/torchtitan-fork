@@ -8,22 +8,9 @@ repos:
     -   id: debug-statements
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
-# - repo: https://github.com/PyCQA/isort
-#   rev: 5.13.2
-#   hooks:
-#     - id: isort
-#       args: [--profile, black]
-- repo: https://github.com/PyCQA/flake8
-  rev: 7.1.1
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.7.4
   hooks:
-   - id: flake8
-     args: ['--ignore=E501,E203,E731,W503']
-- repo: https://github.com/psf/black
-  rev: 24.10.0
-  hooks:
-    - id: black
-# - repo: https://github.com/pre-commit/mirrors-mypy
-#   rev: v1.10.0
-#   hooks:
-#     - id: mypy
-#       additional_dependencies: [types-dataclasses, numpy]
+    - id: ruff
+      args: [ --fix ]
+    - id: ruff-format
