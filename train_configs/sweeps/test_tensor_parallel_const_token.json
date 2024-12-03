@@ -1,0 +1,40 @@
+{
+    "command": "CONFIG_FILE=train_configs/llama3_8b.toml SBATCH_ARGS=--time=15:00 bash submit.sh",
+    "parameters": [
+        {
+            "wandb.group": {"values": ["sweep_tensor_parallel"]},
+            "wandb.project":{"values": ["titan_sweeps"]},
+            "training.steps": {"values": [200]},
+            "training.batch_size ": {"values": [12, 16]},
+            "training.tensor_parallel_degree": {"values": [2]}
+        },
+        {
+            "wandb.group": {"values": ["sweep_tensor_parallel"]},
+            "wandb.project":{"values": ["titan_sweeps"]},
+            "training.steps": {"values": [200]},
+            "training.batch_size ": {"values": [24, 32]},
+            "training.tensor_parallel_degree": {"values": [4]}
+        },
+        {
+            "wandb.group": {"values": ["sweep_tensor_parallel"]},
+            "wandb.project":{"values": ["titan_sweeps"]},
+            "training.steps": {"values": [200]},
+            "training.batch_size ": {"values": [48, 64]},
+            "training.tensor_parallel_degree": {"values": [8]}
+        },
+        {
+            "wandb.group": {"values": ["sweep_tensor_parallel"]},
+            "wandb.project":{"values": ["titan_sweeps"]},
+            "training.steps": {"values": [200]},
+            "training.batch_size ": {"values": [64, 128]},
+            "training.tensor_parallel_degree": {"values": [16]}
+        },
+        {
+            "wandb.group": {"values": ["sweep_tensor_parallel"]},
+            "wandb.project":{"values": ["titan_sweeps"]},
+            "training.steps": {"values": [200]},
+            "training.batch_size ": {"values": [8, 10]},
+            "training.tensor_parallel_degree": {"values": [1]}
+        }
+    ]
+}

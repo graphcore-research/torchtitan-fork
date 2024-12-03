@@ -4,18 +4,27 @@ Parameter Sweep Script for W&B style configs
 Config format:
  {
     "command": "./submit.sh", # Executable to run
-    "parameters": {
+    "parameters": { # Single parameter set
         "param.name": {"values": [value1, value2]},
-        "another.param": {"values": [value3, value4]},
-        "flag.param": {"values": [true]}  # Boolean flag parameter
+        "another.param": {"values": [value3, value4]}
     }
  }
-Limitation: You have to use values:[] even for single values
-Usage:
- python sweep.py config.json # Load from file
- python sweep.py --config config.json # Load from file
- python sweep.py --config '{"command":"./train.sh", ...}' # JSON string
 
+ Or
+
+ {
+    "command": "./submit.sh",
+    "parameters": [ # Multiple parameter sets
+        {
+            "param.name": {"values": [value1, value2]},
+            "another.param": {"values": [value3, value4]}
+        },
+        {
+            "param.name": {"values": [value5, value6]},
+            "different.param": {"values": [value7]}
+        }
+    ]
+ }
 """
 
 import json
@@ -27,13 +36,19 @@ from pathlib import Path
 
 DEFAULT_CONFIG = {
     "command": "tests/test_titan_sweep.sh",
-    "parameters": {
-        "training.batch_size": {"values": [4, 8]},
-        "training.seq_len": {"values": [4096, 8192]},
-        "profiling.enable_profiling": {"values": [True]},
-        "optimiser.lr": {"values": [3e-4]},
-        "optimiser.name": {"values": ["AdamW"]},
-    },
+    "parameters": [
+        {
+            "training.batch_size": {"values": [4, 8]},
+            "training.seq_len": {"values": [4096, 8192]},
+            "profiling.enable_profiling": {"values": [True]},
+            "optimiser.lr": {"values": [3e-4]},
+            "optimiser.name": {"values": ["AdamW"]},
+        },
+        {
+            "training.batch_size": {"values": [16]},
+            "training.seq_len": {"values": [4096, 8192]},
+        },
+    ],
 }
 
 
@@ -50,20 +65,35 @@ def load_config(config_source=None):
         sys.exit(1)
 
 
-def validate_parameters(config):
-    if "command" not in config:
-        raise ValueError("Missing 'command' in config")
-    if not isinstance(config["command"], str):
-        raise ValueError("'command' must be a string")
-
-    parameters = config.get("parameters", {})
-    for param, param_config in parameters.items():
+def validate_parameters(params):
+    if not isinstance(params, dict):
+        raise ValueError("Parameters must be a dictionary")
+    for param, param_config in params.items():
         if not isinstance(param, str) or "." not in param:
             raise ValueError(f"Invalid parameter name: {param}")
         if not isinstance(param_config, dict) or "values" not in param_config:
             raise ValueError(f"Invalid configuration for parameter: {param}")
         if not isinstance(param_config["values"], list):
             raise ValueError(f"Values must be a list for parameter: {param}")
+
+
+def validate_config(config):
+    if "command" not in config:
+        raise ValueError("Missing 'command' in config")
+    if not isinstance(config["command"], str):
+        raise ValueError("'command' must be a string")
+    if "parameters" not in config:
+        raise ValueError("Missing 'parameters' in config")
+
+    # Handle both single dict and list of dicts
+    param_sets = config["parameters"]
+    if isinstance(param_sets, dict):
+        validate_parameters(param_sets)
+    elif isinstance(param_sets, list):
+        for param_set in param_sets:
+            validate_parameters(param_set)
+    else:
+        raise ValueError("'parameters' must be either dict or list of dicts")
 
 
 def generate_command_combinations(parameters):
@@ -80,14 +110,11 @@ def run_command(command, command_list):
     for param, value in command_list:
         if isinstance(value, bool):
             if value:
-                # For True values, just add the flag
                 cmd.append(f"--{param}")
         else:
-            # For string values, add quotes
             if isinstance(value, str):
                 cmd.extend([f"--{param}", f'"{value}"'])
             else:
-                # For other values (like numbers), add without quotes
                 cmd.extend([f"--{param}", str(value)])
 
     try:
@@ -109,11 +136,17 @@ def main():
     config = load_config(config_source)
 
     try:
-        validate_parameters(config)
+        validate_config(config)
         command = config["command"]
-        parameters = config["parameters"]
-        for combo in generate_command_combinations(parameters):
-            run_command(command, combo)
+
+        # Handle both single dict and list of dicts
+        param_sets = config["parameters"]
+        if isinstance(param_sets, dict):
+            param_sets = [param_sets]
+
+        for param_set in param_sets:
+            for combo in generate_command_combinations(param_set):
+                run_command(command, combo)
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)

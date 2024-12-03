@@ -1,0 +1,19 @@
+{
+    "command": "CONFIG_FILE=train_configs/llama3_8b.toml SBATCH_ARGS=--time=15:00 bash submit.sh",
+        "parameters": [
+        {
+            "wandb.group": {"values": ["sweep_bs_seqlen"]},
+            "wandb.project":{"values": ["titan_sweeps"]},
+            "training.steps": {"values": [1000]},
+            "training.batch_size": {"values": [1, 8, 12]},
+            "training.seq_len": {"values": [2048, 8192, 16384]}
+        },
+        {
+            "wandb.group": {"values": ["sweep_bs_seqlen"]},
+            "wandb.project":{"values": ["titan_sweeps"]},
+            "training.steps": {"values": [500]},
+            "training.batch_size": {"values": [4, 10]},
+            "training.seq_len": {"values": [2048, 4096, 8192]}
+        }
+    ]
+}

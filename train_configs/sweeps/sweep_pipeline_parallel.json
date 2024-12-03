@@ -1,0 +1,13 @@
+{
+    "command": "CONFIG_FILE=train_configs/llama3_8b.toml SBATCH_ARGS=--time=15:00 bash submit.sh",
+    "parameters": {
+        "wandb.group": {"values": ["sweep_pipeline_parallel-splitpoint_microbatch"]},
+        "wandb.project":{"values": ["titan_sweeps"]},
+        "training.steps": {"values": [200]},
+        "training.batch_size": {"values": [16]},
+        "experimental.pipeline_parallel_degree": {"values": [2]},
+        "experimental.pipeline_parallel_schedule": {"values": ["1F1B"]},
+        "experimental.pipeline_parallel_split_points": {"values": ["layer.15"]},
+        "experimental.pipeline_parallel_microbatches": {"values": [4]}
+    }
+}

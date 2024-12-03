@@ -13,4 +13,4 @@ if ! [ -z "${WANDB_PROJECT:-}" ]; then
   echo "W&B project URL: 'https://wandb.ai/graphcore/${WANDB_PROJECT}'"
 fi
 echo "W&B Name: '${WANDB_NAME}'"
-sbatch multinode_trainer.slurm "$@"
+sbatch ${SBATCH_ARGS:-} multinode_trainer.slurm "$@"

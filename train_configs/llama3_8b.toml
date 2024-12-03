@@ -35,9 +35,9 @@ steps = 130000 # 14h
 data_parallel_replicate_degree = 1
 data_parallel_shard_degree = -1
 tensor_parallel_degree = 1
-compile = false
+compile = true
 dataset = "slimpajama"
-dataloading_args='{"streaming": false}'
+dataloading_args='{"streaming": false, "verification_mode": "no_checks"}'
 
 [experimental]
 pipeline_parallel_degree = 1

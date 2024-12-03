@@ -1,0 +1,11 @@
+{
+    "command": "CONFIG_FILE=train_configs/llama3_8b.toml SBATCH_ARGS=--time=15:00 bash submit.sh",
+    "parameters": {
+        "wandb.group": {"values": ["sweep_data_parallel"]},
+        "wandb.project":{"values": ["titan_sweeps"]},
+        "training.steps": {"values": [200]},
+        "training.batch_size": {"values": [1, 4, 8]},
+        "training.data_parallel_replicate_degree": {"values": [16, 8, 2]},
+        "training.data_parallel_shard_degree": {"values": [-1]}
+    }
+}
