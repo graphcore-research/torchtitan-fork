@@ -8,8 +8,8 @@ except ModuleNotFoundError:
 
 import sys
 
-from torchtitan.torchtitan.config_manager import JobConfig as TTJobConfig
-from torchtitan.torchtitan.logging import logger
+from torchtitan.config_manager import JobConfig as TTJobConfig
+from torchtitan.logging import logger
 
 
 class JobConfig(TTJobConfig):
@@ -120,6 +120,13 @@ class JobConfig(TTJobConfig):
         # If W&B training run name setup, append to output directory.
         if len(self.wandb.name):
             self.job.dump_folder = os.path.join(self.job.dump_folder, self.wandb.name)
+
+    @classmethod
+    def make_default(cls) -> "JobConfig":
+        """Create a JobConfig instance with default values."""
+        cfg = JobConfig()
+        cfg.parse_args([])
+        return cfg
 
 
 def _override(args_dict, overrides_dict):

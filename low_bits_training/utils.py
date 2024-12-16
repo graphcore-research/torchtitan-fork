@@ -5,9 +5,9 @@ import os
 from typing import Any, Dict
 
 import wandb
-from torchtitan.torchtitan.config_manager import JobConfig
-from torchtitan.torchtitan.metrics import _get_metrics_rank
-from torchtitan.torchtitan.parallelisms.parallel_dims import ParallelDims
+from torchtitan.config_manager import JobConfig
+from torchtitan.metrics import _get_metrics_rank
+from torchtitan.parallelisms.parallel_dims import ParallelDims
 
 
 def job_config_to_config_dict(job_config: JobConfig) -> Dict[str, Dict[str, Any]]:
@@ -35,7 +35,7 @@ def job_config_to_config_dict(job_config: JobConfig) -> Dict[str, Dict[str, Any]
     return config_dict
 
 
-def get_parallel_dims(job_config) -> ParallelDims:
+def get_parallel_dims(job_config: JobConfig) -> ParallelDims:
     world_size = int(os.environ["WORLD_SIZE"])
     return ParallelDims(
         dp_shard=job_config.training.data_parallel_shard_degree,
