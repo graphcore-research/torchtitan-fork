@@ -6,9 +6,11 @@ from typing import List, Protocol, Union
 import torch.nn as nn
 
 import torchtitan.float8
-from torchtitan.config_manager import JobConfig
 from torchtitan.float8 import Float8Handler as TTFloat8Handler
 from torchtitan.parallelisms import ParallelDims
+
+
+from .config_manager import JobConfig
 
 
 class LowPrecisionHandler(Protocol):

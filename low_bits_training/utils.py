@@ -5,9 +5,10 @@ import os
 from typing import Any, Dict
 
 import wandb
-from torchtitan.config_manager import JobConfig
 from torchtitan.metrics import _get_metrics_rank
 from torchtitan.parallelisms.parallel_dims import ParallelDims
+
+from .config_manager import JobConfig
 
 
 def job_config_to_config_dict(job_config: JobConfig) -> Dict[str, Dict[str, Any]]:
@@ -15,8 +16,7 @@ def job_config_to_config_dict(job_config: JobConfig) -> Dict[str, Dict[str, Any]
     JobConfig is created from Argument Parser as a two level object.
 
     This a hacky method of converting JobConfig to a ConfigDict that can
-    cleanly be consumed by wandb
-
+    cleanly be consumed by wandb.
     """
     first_level_args = [
         attr for attr in dir(job_config) if not (attr.startswith("_") or "parse" in attr)
@@ -74,6 +74,7 @@ def wandb_logging_mode(job_config: JobConfig) -> str:
     """
     # By default, online on processes where logging is activated.
     wb_mode = job_config.wandb.mode
+    assert isinstance(wb_mode, str)
     # Only forward the default mode on processes logging is enabled.
     return wb_mode if is_metrics_logging_enabled(job_config) else "disabled"
 

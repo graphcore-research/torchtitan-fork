@@ -10,12 +10,13 @@ import torch.distributed.distributed_c10d as c10d
 import torch.nn as nn
 from torch.distributed.device_mesh import DeviceMesh
 
-import torchtitan
+import torchtitan.metrics
 import wandb
-from torchtitan.metrics import JobConfig
 from torchtitan.optimizer import build_lr_schedulers as tt_build_lr_schedulers
 from torchtitan.optimizer import build_optimizers as tt_build_optimizers
 from torchtitan.parallelisms import ParallelDims as ttParallelDims
+
+from .config_manager import JobConfig
 
 _logger_model_cache: Dict[str, Any] = {
     "model": None,
