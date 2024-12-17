@@ -12,8 +12,8 @@ sys.path.append(os.path.dirname(__file__) + "/../torchtitan")
 from . import datasets  # noqa: F401, E402
 from . import metrics  # noqa: F401, E402
 from . import models  # noqa: F401, E402
-from .low_precision_handler import (  # noqa: F401, E402
-    EmptyHandler,
+from .quantization import (  # noqa: F401, E402
+    NoQuantizationHandler,
     Float8Handler,
-    LowPrecisionHandler,
+    QuantizationHandler,
 )

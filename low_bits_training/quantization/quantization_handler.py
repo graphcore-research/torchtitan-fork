@@ -6,15 +6,15 @@ from typing import List, Protocol, Union
 import torch.nn as nn
 
 import torchtitan.float8
+
+from torchtitan.config_manager import JobConfig
 from torchtitan.float8 import Float8Handler as TTFloat8Handler
 from torchtitan.parallelisms import ParallelDims
+from torchtitan.logging import logger
 
 
-from .config_manager import JobConfig
-
-
-class LowPrecisionHandler(Protocol):
-    """Low-precision PyTorch model handler interface."""
+class QuantizationHandler(Protocol):
+    """Quantization PyTorch model handler interface."""
 
     def __init__(self, job_config: JobConfig, parallel_dims: ParallelDims):
         """Initialize the low-precision handler from job configuration."""
@@ -47,7 +47,7 @@ class LowPrecisionHandler(Protocol):
         return self.post_optimizer_pass(model)
 
 
-class EmptyHandler(LowPrecisionHandler):
+class NoQuantizationHandler(QuantizationHandler):
     """Empty TorchTitan model handler (i.e. no modification to model)."""
 
     def __init__(self, job_config: JobConfig, parallel_dims: ParallelDims):
@@ -63,7 +63,7 @@ class EmptyHandler(LowPrecisionHandler):
         pass
 
 
-class Float8Handler(LowPrecisionHandler):
+class Float8Handler(QuantizationHandler):
     """TorchTitan Float8 handler (with delayed scaling) wrapper."""
 
     def __init__(self, job_config: JobConfig, parallel_dims: ParallelDims):
@@ -79,16 +79,16 @@ class Float8Handler(LowPrecisionHandler):
         return self._impl.precompute_float8_dynamic_scale_for_fsdp(model)
 
 
-def build_low_precision_handler(
+def build_quantization_handler(
     job_config: JobConfig, parallel_dims: ParallelDims
-) -> LowPrecisionHandler:
-    """Low precision handler factory method, based on the job config."""
-    print("Building low-precision model handler")
+) -> QuantizationHandler:
+    """Quantization handler factory method, based on the job config."""
+    logger.info("Building quantization model handler")
     if job_config.float8.enable_float8_linear:
         return Float8Handler(job_config, parallel_dims)
     # None by default.
-    return EmptyHandler(job_config, parallel_dims)
+    return NoQuantizationHandler(job_config, parallel_dims)
 
 
 # Monkey patching `Float8Handler` to replace it by a factory method.
-torchtitan.float8.Float8Handler = build_low_precision_handler
+torchtitan.float8.Float8Handler = build_quantization_handler
