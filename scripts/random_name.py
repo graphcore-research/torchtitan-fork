@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2024 Graphcore Ltd. All rights reserved.
+#
 import random
 
 # Lists of words that can be combined "meaningfully"
