@@ -17,6 +17,7 @@ dependencies = [
     # Low-bits-training dependencies.
     "numpy >= 2.1.2",
     "torch >= 2.5.1",
+    "torchao",
     "zstandard",
     "wandb",
     # NCCL H100 cluster fix
