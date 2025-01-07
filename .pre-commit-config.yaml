@@ -12,10 +12,5 @@ repos:
   rev: v0.7.4
   hooks:
     - id: ruff
-      args: [ --fix ]
+      args: [--fix]
     - id: ruff-format
-- repo: https://github.com/johann-petrak/licenseheaders.git
-  rev: v0.8.8
-  hooks:
-      - id: licenseheaders
-        args: ["-t", "copyright.tmpl", "-o", "Graphcore Ltd", "-E", ".py", "-cy", "-f"]

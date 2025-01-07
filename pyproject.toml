@@ -35,5 +35,16 @@ dev-dependencies = [
 packages = ["low_bits_training", "low_bits_training.datasets", "low_bits_training.models"]
 
 [tool.ruff]
+# Omit running ruff formatting & check on TorchTitan sub-module.
+extend-exclude = ["torchtitan"]
+
 line-length = 90
 target-version = 'py310'
+
+[tool.ruff.lint]
+# Copyright checking requires preview
+preview = true
+extend-select = ["CPY"]
+
+[tool.ruff.lint.flake8-copyright]
+author = "Graphcore Ltd. All rights reserved."
