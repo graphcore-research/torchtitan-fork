@@ -4,7 +4,7 @@
 from low_bits_training.config_manager import JobConfig
 from dataclasses import fields
 
-import torchtitan.torchtitan.models as tt_models
+import torchtitan.models as tt_models
 from torchtitan.models.llama import ModelArgs
 
 
@@ -34,8 +34,8 @@ def test_model_args_creation_env(monkeypatch):
     """
     Tests model args overriden by environment variables
     """
-    monkeypatch.setenv("MODEL_DIM", 1472)
-    monkeypatch.setenv("MODEL_N_LAYERS", 100)
+    monkeypatch.setenv("MODEL_DIM", "1472")
+    monkeypatch.setenv("MODEL_N_LAYERS", "100")
     config = JobConfig()
     config.parse_args(["--model.name=llama2", "--model.flavor=debugmodel"])
 
@@ -51,7 +51,7 @@ def test_model_args_creation_both(monkeypatch):
     """
     Tests model args overriden by environment variables and CLI
     """
-    monkeypatch.setenv("MODEL_DIM", 1472)
+    monkeypatch.setenv("MODEL_DIM", "1472")
     config = JobConfig()
     config.parse_args(
         [
