@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 Graphcore Ltd. All rights reserved.
+# Copyright (c) 2025 Graphcore Ltd. All rights reserved.
 #
 """
 Parameter Sweep Script for W&B style configs

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2024 Graphcore Ltd. All rights reserved.
+# Copyright (c) 2025 Graphcore Ltd. All rights reserved.
 #
 import os
 import sys
@@ -17,3 +17,5 @@ from .quantization import (  # noqa: F401, E402
     Float8Handler,
     QuantizationHandler,
 )
+
+from .config_manager import model_registry as model_registry

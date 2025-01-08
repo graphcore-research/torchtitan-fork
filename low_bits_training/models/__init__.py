@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2024 Graphcore Ltd. All rights reserved.
+# Copyright (c) 2025 Graphcore Ltd. All rights reserved.
 #
 from torchtitan.models import (  # noqa: F401
     model_name_to_cls,

@@ -1,7 +1,9 @@
 #
-# Copyright (c) 2024 Graphcore Ltd. All rights reserved.
+# Copyright (c) 2025 Graphcore Ltd. All rights reserved.
 #
 import argparse
+import hashlib
+import json
 import os
 
 try:
@@ -11,8 +13,13 @@ except ModuleNotFoundError:
 
 import sys
 
+import torchtitan.models as tt_models
+
+from dataclasses import replace, fields
+from typing import Optional, Dict, Any
 from torchtitan.config_manager import JobConfig as TTJobConfig
 from torchtitan.logging import logger
+from torchtitan.models.llama import ModelArgs
 
 
 class JobConfig(TTJobConfig):
@@ -45,6 +52,58 @@ class JobConfig(TTJobConfig):
                 "JSON arguments to pass to W&B load_dataset method when creating the dataset."
                 'For example to enable dataset streaming pass: {"streaming": true} (Note the " quotes)'
             ),
+        )
+
+        # "llama" as default is not a valid model.name
+        self.parser._option_string_actions["--model.name"].default = "llama2"
+
+        self.parser.add_argument(
+            "--model.dim",
+            type=int,
+            help="Model width: dimensionality of token embeddings",
+        )
+        self.parser.add_argument(
+            "--model.n_layers", type=int, help="Number of transformer layers"
+        )
+        self.parser.add_argument(
+            "--model.n_heads",
+            type=int,
+            help="Number of attention heads per query",
+        )
+        self.parser.add_argument(
+            "--model.n_kv_heads",
+            type=Optional[int],
+            help="Number of attention heads per key/value pair",
+        )
+        self.parser.add_argument(
+            "--model.multiple_of",
+            type=int,
+            help="Make SwiGLU hidden layer size multiple of large power of 2",
+        )
+        self.parser.add_argument(
+            "--model.ffn_dim_multiplier",
+            type=float,
+            help="Expansion factor for MLP hidden layer dimensionality",
+        )
+        self.parser.add_argument(
+            "--model.norm_eps",
+            type=float,
+            help="Small norm layer denominator stability constant",
+        )
+        self.parser.add_argument(
+            "--model.rope_theta",
+            type=float,
+            help="Base freqency of rotary positional embeddings",
+        )
+        self.parser.add_argument(
+            "--model.max_seq_len",
+            type=int,
+            help="Maximum length of input sequences",
+        )
+        self.parser.add_argument(
+            "--model.depth_init",
+            type=bool,
+            help="Transformer block init scaled by layer ID or total number of layers",
         )
 
     def combine_args(self):
@@ -124,6 +183,26 @@ class JobConfig(TTJobConfig):
         if len(self.wandb.name):
             self.job.dump_folder = os.path.join(self.job.dump_folder, self.wandb.name)
 
+        # Override model args
+        self.model.flavor = model_registry.override_model_args(
+            self.model.name, self.model.flavor, **self.model_args_dict
+        )
+
+    @property
+    def model_args_dict(self):
+        def _get(field):
+            field_value = getattr(self.model, field.name)
+            field_type = (
+                field.type if field.type in [int, float, bool, str] else type(field_value)
+            )
+            return field_type(field_value) if field_value is not None else None
+
+        return {
+            field.name: _get(field)
+            for field in fields(ModelArgs())
+            if field.name != "vocab_size"
+        }
+
     @classmethod
     def make_default(cls) -> "JobConfig":
         """Create a JobConfig instance with default values."""
@@ -138,3 +217,61 @@ def _override(args_dict, overrides_dict):
         for k, v in section_args.items():
             args_dict[section][k] = v
     return args_dict
+
+
+def generate_flavor_hash(base_flavor: str, overrides: Dict[str, Any]) -> str:
+    """Generate a deterministic hash for a set of model argument overrides."""
+    sorted_items = sorted(overrides.items())
+    override_str = json.dumps(sorted_items, sort_keys=True)
+
+    hash_obj = hashlib.sha256(override_str.encode())
+    short_hash = hash_obj.hexdigest()[:8]
+
+    return f"{base_flavor}_override_{short_hash}"
+
+
+class ModelConfigRegistry:
+    """Registry for managing dynamic model configurations"""
+
+    def __init__(self):
+        self.override_args: Dict[str, Any] = {}
+
+    def override_model_args(self, model_name: str, model_flavor: str, **kwargs):
+        """
+        Override specific ModelArgs parameters for a given model configuration.
+        Returns new flavor name hashed with override args"""
+        self._validate(model_name, model_flavor)
+
+        base_config = tt_models.models_config[model_name][model_flavor]
+        # prune kwargs if values are same as in base_config or are None
+        kwargs = {
+            k: v
+            for k, v in kwargs.items()
+            if v != base_config.__dict__[k] and v is not None
+        }
+        if kwargs:
+            new_config = replace(
+                base_config, **{k: v for k, v in kwargs.items() if v is not None}
+            )
+            new_flavor = generate_flavor_hash(model_flavor, kwargs)
+
+            tt_models.models_config[model_name][new_flavor] = new_config
+
+            key = f"{model_name}:{model_flavor}"
+            self.override_args[key] = kwargs
+            return new_flavor
+        else:
+            return model_flavor
+
+    def _validate(self, model_name: str, model_flavor: str):
+        """Override specific ModelArgs parameters for a given model configuration."""
+        if model_name not in tt_models.models_config:
+            raise ValueError(f"Unknown model name: {model_name}")
+        configs = tt_models.models_config[model_name]
+        if model_flavor not in configs:
+            raise ValueError(
+                f"Unknown model flavor {model_flavor} for model {model_name}"
+            )
+
+
+model_registry = ModelConfigRegistry()
