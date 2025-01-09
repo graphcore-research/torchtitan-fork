@@ -11,16 +11,17 @@
 # --- constraint issues or to tune for improved performance.
 # ---
 
-#SBATCH --job-name=torchtitan_multi_node
+#SBATCH --job-name=low_bits_training_multi_node
 
-#SBATCH --ntasks=2
+#SBATCH --ntasks-per-node=1
 
-#SBATCH --nodes=2
+#SBATCH --nodes=8
 
 #SBATCH --gpus-per-task=8
 
-#SBATCH --cpus-per-task=96
+#SBATCH --cpus-per-task=208
 
+#SBATCH --output=slurm-%j-%x.out
 
 export nodes=( $( scontrol show hostnames $SLURM_JOB_NODELIST ) )
 export nodes_array=($nodes)
