@@ -32,7 +32,12 @@ dev-dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["low_bits_training", "low_bits_training.datasets", "low_bits_training.models"]
+packages = [
+    "low_bits_training",
+    "low_bits_training.datasets",
+    "low_bits_training.models",
+    "low_bits_training.quantization"
+]
 
 [tool.ruff]
 # Omit running ruff formatting & check on TorchTitan sub-module.
