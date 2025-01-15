@@ -10,6 +10,7 @@ from low_bits_training.utils import (
     get_parallel_dims,
     is_metrics_logging_enabled,
     wandb_logging_mode,
+    wandb_group,
 )
 
 
@@ -83,3 +84,14 @@ def test__is_metrics_rank__with_pipeline_parallelism(monkeypatch):
     # PP == 8 => RANK 7 is the metric logger.
     config.experimental.pipeline_parallel_degree = 8
     assert is_metrics_rank(config)
+
+
+def test__wandb_group__proper_default():
+    config = JobConfig.make_default()
+    config.wandb.name = "test"
+    # Default case scenario.
+    assert config.wandb.group == ""
+    assert wandb_group(config) == "test"
+    # Group provided scenario.
+    config.wandb.group = "group"
+    assert wandb_group(config) == "group"

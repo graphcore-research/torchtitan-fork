@@ -9,10 +9,11 @@ export WANDB_API_KEY="${WANDB_API_KEY}"
 export HF_TOKEN="${HF_TOKEN}"
 export GC_USER="${GC_USER}"
 
+echo "W&B Name: '${WANDB_NAME}'"
 if ! [ -z "${WANDB_PROJECT:-}" ]; then
   echo "W&B project URL: 'https://wandb.ai/graphcore/${WANDB_PROJECT}'"
+  echo "W&B per groups: 'https://wandb.ai/graphcore/${WANDB_PROJECT}/groups/${WANDB_NAME}'"
 fi
-echo "W&B Name: '${WANDB_NAME}'"
 
 # Checkpointing & log directory + output name (with slurm job ID).
 if [ -z "${SBATCH_OUTPUT:-}" ]; then

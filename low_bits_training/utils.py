@@ -79,13 +79,18 @@ def wandb_logging_mode(job_config: JobConfig) -> str:
     return wb_mode if is_metrics_logging_enabled(job_config) else "disabled"
 
 
+def wandb_group(job_config: JobConfig) -> str:
+    """Get the W&B job config group, or generate a default one if not set."""
+    return job_config.wandb.group or job_config.wandb.name
+
+
 def wandb_init(job_config: JobConfig, project: str, entity: str):
     """Initialize properly W&B for current process and training job."""
     config_dict = job_config_to_config_dict(job_config)
 
     rank = os.environ["RANK"]
-    wb_group_id = job_config.wandb.group
     wb_training_run_id = job_config.wandb.name
+    wb_group_id = wandb_group(job_config)
     # Standardize naming of the run, based on training name and rank.
     wb_run_name = f"{wb_training_run_id}:rank_{rank}"
     # Additional metadata to record on W&B.
