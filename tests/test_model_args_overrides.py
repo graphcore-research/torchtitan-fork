@@ -108,9 +108,6 @@ def test_job_config_model_args_synced():
     }
     model_fields = {field.name for field in fields(ModelArgs())}
 
-    print(model_actions)
-    print(model_fields)
-
     # remove model_actions not consumed by ModelArgs
     model_actions -= {"name", "flavor", "model_weights_only", "tokenizer_path"}
 

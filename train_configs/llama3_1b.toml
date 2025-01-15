@@ -26,6 +26,8 @@ tokenizer_path = "./torchtitan/torchtitan/datasets/tokenizer/original/tokenizer.
 [optimizer]
 name = "AdamW"
 lr = 3e-4
+lr_scheduler = "linear_warmup_linear_decay"
+lr_scheduler_args = '{}'
 
 [training]
 batch_size = 8 # ideally 128

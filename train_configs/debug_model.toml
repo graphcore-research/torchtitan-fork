@@ -30,6 +30,8 @@ tokenizer_path = "./torchtitan/test/assets/test_tiktoken.model"
 [optimizer]
 name = "AdamW"
 lr = 8e-4
+lr_scheduler = "linear_warmup_linear_decay"
+lr_scheduler_args = '{}'
 
 [training]
 batch_size = 8

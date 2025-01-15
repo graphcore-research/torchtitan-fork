@@ -12,8 +12,6 @@ from torch.distributed.device_mesh import DeviceMesh
 
 import torchtitan.metrics
 import wandb
-from torchtitan.optimizer import build_lr_schedulers as tt_build_lr_schedulers
-from torchtitan.optimizer import build_optimizers as tt_build_optimizers
 from torchtitan.parallelisms import ParallelDims as ttParallelDims
 
 from .config_manager import JobConfig
@@ -133,23 +131,4 @@ def build_metric_logger(
 
 # Monkey-patching original TorchTitan facotory method.
 torchtitan.metrics.build_metric_logger = build_metric_logger
-
-
-def build_optimizers(model_parts, job_config: JobConfig):
-    """Wrapping TorchTitan optimizer factory method, keeping track of the optimizer."""
-    optimizer = tt_build_optimizers(model_parts, job_config)
-    _logger_model_cache["optimizer"] = optimizer
-    return optimizer
-
-
-def build_lr_schedulers(optimizers, job_config: JobConfig):
-    """Wrapping TorchTitan LR scheduler factory method, keeping track of the LR scheduler."""
-    lr_scheduler = tt_build_lr_schedulers(optimizers, job_config)
-    _logger_model_cache["lr_scheduler"] = lr_scheduler
-    return lr_scheduler
-
-
-# Patching factory methods to keep track of optimizers & LR schedulers.
-torchtitan.optimizer.build_optimizers = build_optimizers
-torchtitan.optimizer.build_lr_schedulers = build_lr_schedulers
 torchtitan.parallelisms.ParallelDims = ParallelDims

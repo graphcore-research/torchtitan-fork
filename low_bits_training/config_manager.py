@@ -44,6 +44,20 @@ class JobConfig(TTJobConfig):
             default="online",
             help="Wandb logging mode",
         )
+        # Optimizer arguments.
+        self.parser.add_argument(
+            "--optimizer.lr_scheduler",
+            type=str,
+            default="linear_warmup_linear_decay",
+            help="LR scheduler to use",
+        )
+        self.parser.add_argument(
+            "--optimizer.lr_scheduler_args",
+            type=str,
+            default="{}",
+            help="Optional LR scheduler arguments",
+        )
+        # Training arguments.
         self.parser.add_argument(
             "--training.dataloading_args",
             type=str,

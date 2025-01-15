@@ -17,5 +17,6 @@ from .quantization import (  # noqa: F401, E402
     Float8Handler,
     QuantizationHandler,
 )
+from . import optimizer  # noqa: F401, E402
 
 from .config_manager import model_registry as model_registry
