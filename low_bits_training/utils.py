@@ -47,23 +47,31 @@ def get_parallel_dims(job_config: JobConfig) -> ParallelDims:
     )
 
 
-def is_metrics_rank(job_config: JobConfig) -> bool:
-    """Calls torchtitan's `_get_metrics_rank` to figure out if we are on the
-    correct process to collect metrics
-
-    This check is needed for pipelining configurations.
-    """
-    metrics_rank = _get_metrics_rank(get_parallel_dims(job_config))
-    return int(os.environ["RANK"]) == metrics_rank
-
-
 def is_metrics_logging_enabled(job_config: JobConfig) -> bool:
     """Is (W&B) metrics logging enabled on this process."""
-    # Are we on the right rank process, if using rank 0 only?
-    enable_wb_logging = job_config.metrics.enable_tensorboard and (
-        is_metrics_rank(job_config) or not job_config.metrics.rank_0_only
+    # Is metrics logging enabled?
+    if not job_config.metrics.enable_tensorboard:
+        return False
+
+    # Deprecated `metrics.rank_0_only` argument.
+    assert not job_config.metrics.rank_0_only, "`config.metrics.rank_0_only` is deprecated, please use `config.metrics.distributed_mode` instead."
+
+    if job_config.metrics.distributed_mode == "all":
+        # All processes logging metrics!
+        return True
+    elif job_config.metrics.distributed_mode == "rank_0":
+        # Only rank 0 (or last pipeline stage rank).
+        metrics_rank = _get_metrics_rank(get_parallel_dims(job_config))
+        return int(os.environ["RANK"]) == metrics_rank
+    elif job_config.metrics.distributed_mode == "local_rank_0":
+        # Local rank 0 on every node (or adapted to pipeline parallelism)
+        metrics_rank = _get_metrics_rank(get_parallel_dims(job_config))
+        # Convert the global rank to a local rank on every node.
+        local_metrics_rank = metrics_rank % int(int(os.environ["LOCAL_WORLD_SIZE"]))
+        return int(os.environ["LOCAL_RANK"]) == local_metrics_rank
+    raise AttributeError(
+        f"Unknown job config `metrics.distributed_mode` value: '{job_config.metrics.distributed_mode}'."
     )
-    return enable_wb_logging
 
 
 def wandb_logging_mode(job_config: JobConfig) -> str:

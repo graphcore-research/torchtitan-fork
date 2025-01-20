@@ -17,7 +17,8 @@ log_freq = 1
 enable_color_printing = true
 enable_tensorboard = true
 save_tb_folder = "tb"
-rank_0_only = true
+rank_0_only = false # deprecated
+distributed_mode = "local_rank_0" # all / local_rank_0 / rank_0
 
 [model]
 name = "llama3"

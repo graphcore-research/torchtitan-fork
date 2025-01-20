@@ -44,6 +44,20 @@ class JobConfig(TTJobConfig):
             default="online",
             help="Wandb logging mode",
         )
+        # Metrics, distributed mode
+        self.parser.add_argument(
+            "--metrics.distributed_mode",
+            choices=["all", "local_rank_0", "rank_0"],
+            default="local_rank_0",
+            help="""
+                Metrics collection distributed mode.
+                    all: All ranks reporting metrics.
+                    local_rank_0: Every node local rank 0 only.
+                    rank_0: Rank 0 process only.
+                When pipeline_parallel_degree is > 1, the option `rank_0` uses the 0th rank of the last stage pipeline group,
+                which is the only stage that computes loss metrics.
+            """,
+        )
         # Optimizer arguments.
         self.parser.add_argument(
             "--optimizer.lr_scheduler",
