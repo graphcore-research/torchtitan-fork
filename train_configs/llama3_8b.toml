@@ -11,7 +11,7 @@ save_traces_folder = "profile_trace"
 profile_freq = 10000
 
 [metrics]
-log_freq = 10
+log_freq = 25
 enable_tensorboard = true
 save_tb_folder = "tb"
 rank_0_only = false # deprecated
@@ -25,22 +25,22 @@ tokenizer_path = "./torchtitan/torchtitan/datasets/tokenizer/original/tokenizer.
 
 [optimizer]
 name = "AdamW"
-lr = 3e-4
-lr_scheduler = "linear_warmup_linear_decay"
-lr_scheduler_args = '{}'
+lr = 0.000244140625 # 2**-12
+lr_scheduler = "linear_warmup_cosine_decay"
+lr_scheduler_args = '{"final_scaling": 0.01}'
 
 [training]
-batch_size = 8
-seq_len = 2048
-warmup_steps = 7000  # lr scheduler warm up
+batch_size = 4
+seq_len = 4096 # 1M token / step
+warmup_steps = 2000  # lr scheduler warm up
 max_norm = 1.0  # grad norm clipping
-steps = 130000 # 14h
+steps = 300000 # 300B token
 data_parallel_replicate_degree = 1
 data_parallel_shard_degree = -1
 tensor_parallel_degree = 1
 compile = true
 dataset = "slimpajama"
-dataloading_args='{"streaming": false, "verification_mode": "no_checks"}'
+dataloading_args='{"streaming": false, "verification_mode": "no_checks", "cache_dir": "/home/ubuntu/huggingface_cache/"}'
 
 [experimental]
 pipeline_parallel_degree = 1
@@ -49,7 +49,7 @@ pipeline_parallel_degree = 1
 enable_checkpoint = true
 folder = "checkpoint"
 interval_type = "steps"
-interval = 10000
+interval = 1500
 model_weights_only = false
 export_dtype = "float32"
 async_mode = "async" # ["disabled", "async", "async_with_pinned_mem"]
