@@ -83,7 +83,7 @@ class JobConfig(TTJobConfig):
         )
 
         # "llama" as default is not a valid model.name
-        self.parser._option_string_actions["--model.name"].default = "llama2"
+        self.parser._option_string_actions["--model.name"].default = "llama3"
 
         self.parser.add_argument(
             "--model.dim",

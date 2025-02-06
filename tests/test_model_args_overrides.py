@@ -15,7 +15,7 @@ def test_model_args_creation_cli():
     config = JobConfig()
     config.parse_args(
         [
-            "--model.name=llama2",
+            "--model.name=llama3",
             "--model.flavor=debugmodel",
             "--model.dim=1472",
             "--model.n_layers=100",
@@ -37,7 +37,7 @@ def test_model_args_creation_env(monkeypatch):
     monkeypatch.setenv("MODEL_DIM", "1472")
     monkeypatch.setenv("MODEL_N_LAYERS", "100")
     config = JobConfig()
-    config.parse_args(["--model.name=llama2", "--model.flavor=debugmodel"])
+    config.parse_args(["--model.name=llama3", "--model.flavor=debugmodel"])
 
     assert "override" in config.model.flavor
     assert config.model.flavor.count("override") == 1
@@ -55,7 +55,7 @@ def test_model_args_creation_both(monkeypatch):
     config = JobConfig()
     config.parse_args(
         [
-            "--model.name=llama2",
+            "--model.name=llama3",
             "--model.flavor=debugmodel",
             "--model.n_layers=100",
         ]
