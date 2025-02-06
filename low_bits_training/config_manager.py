@@ -77,8 +77,9 @@ class JobConfig(TTJobConfig):
             type=str,
             default=None,
             help=(
-                "JSON arguments to pass to W&B load_dataset method when creating the dataset."
+                "JSON arguments to pass to HF load_dataset method when creating the dataset."
                 'For example to enable dataset streaming pass: {"streaming": true} (Note the " quotes)'
+                "This only works with compatible datasets (slimpajama)"
             ),
         )
 
@@ -138,8 +139,8 @@ class JobConfig(TTJobConfig):
         """Certain arguments are combined into a single argument for compatibility
         with the Torchtitan training script."""
         if self.training.dataloading_args is not None:
-            self.training.dataset = (
-                f"{self.training.dataset}:{self.training.dataloading_args}"
+            self.training.dataset_path = (
+                f"{self.training.dataset_path}:{self.training.dataloading_args}"
             )
         return self
 
