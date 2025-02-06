@@ -9,7 +9,6 @@ import math
 import torchtitan.optimizer
 from torchtitan.optimizer import build_lr_schedulers as tt_build_lr_schedulers
 from torchtitan.optimizer import build_optimizers as tt_build_optimizers
-from torch.optim.lr_scheduler import LambdaLR
 
 from .config_manager import JobConfig
 from .metrics import _logger_model_cache
@@ -85,9 +84,7 @@ def build_lr_schedulers(optimizers, job_config: JobConfig):
         TTSchedulersContainer = type(tt_lr_scheduler)
     # Re-build with proper LR scheduler.
     lr_lambda = build_lr_scheduler_lambda(job_config)
-    lr_scheduler = TTSchedulersContainer(
-        [LambdaLR(optimizer, lr_lambda=lr_lambda) for optimizer in optimizers]
-    )
+    lr_scheduler = TTSchedulersContainer(optimizers, lr_lambda)
     # Caching for logging purposes.
     _logger_model_cache["lr_scheduler"] = lr_scheduler
     return lr_scheduler
