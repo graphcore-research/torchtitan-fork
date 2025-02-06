@@ -19,6 +19,7 @@ def test_custom_dataset_parsing(caplog: pytest.LogCaptureFixture):
     """ """
     job_config = JobConfig()
     c4_test_path = hf_datasets.DATASETS["c4_test"].path
+    # TODO: make it so that this test downloads the tokenizer somewhere sensible
     job_config.parse_args(
         [
             "--training.dataset=slimpajama",
