@@ -9,7 +9,7 @@ from datasets import load_dataset
 from datasets.distributed import split_dataset_by_node
 
 import torchtitan.datasets.hf_datasets
-from torchtitan.datasets.hf_datasets import HuggingFaceDataset, _supported_datasets
+from torchtitan.datasets.hf_datasets import HuggingFaceDataset, DATASETS as DATASETS
 from torchtitan.datasets.tokenizer import Tokenizer
 from torchtitan.logging import logger
 

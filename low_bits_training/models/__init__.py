@@ -9,7 +9,6 @@ from torchtitan.models import (  # noqa: F401
 from torchtitan.models.llama import (  # noqa: F401
     ModelArgs,
     Transformer,
-    llama2_configs,
     llama3_configs,
 )
 
