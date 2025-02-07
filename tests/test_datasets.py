@@ -16,16 +16,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture()
-def tokenizer_path(tmp_path):
-    """downloads some tokenizer for testing"""
-    from huggingface_hub import hf_hub_download
-    tokenizer_path = "original/tokenizer.model"  # in the remote repo
-    hf_hub_download(
-        repo_id="meta-llama/Meta-Llama-3.1-8B",
-        filename=tokenizer_path,
-        local_dir=str(tmp_path),
-    )
-    return str(tmp_path / tokenizer_path)
+def tokenizer_path():
+    """use torchtitant test tokenizer"""
+    return f"{REPO_ROOT}/torchtitan/tests/assets/test_tiktoken.model"
 
 
 def test_custom_dataset_parsing(caplog: pytest.LogCaptureFixture, tokenizer_path):
