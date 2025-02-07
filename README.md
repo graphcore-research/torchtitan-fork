@@ -146,3 +146,48 @@ Useful GDB commands:
 ```bash
 pre-commit install
 ```
+
+## Viewing profiles
+
+When profiling is turned on in the config (see [`train_configs/llama3_8b_profiling.toml`](train_configs/llama3_8b_profiling.toml) for an example)
+X types of files will be visible in the dump folder (usually in `outputs/<random>-<word>-<KK>/`):
+
+* `profile_trace/iteration_NNNN/rank{rank}.{timestamp}.pt.trace.json` (one per rank, per profiling iteration): Chrome traces in a format compatible with [](ui.perfetto.dev) and Tensorboard.
+* `profile_trace/iteration_NNNN/memory/rank{rank}.(json|raw.json.gz|json.gz)`: Pytorch memory timeline outputs (these files are hard to interpret and weakly documented - prefer using memory information from traces).
+* `memory_snapshot/iteration_NNNN/rank{rank}_memory_snapshot.pickle`: Pytorch memory snapshot of the last 10000 memory allocations. You can visualize it's contents at: [](https://pytorch.org/memory_viz).
+
+Other items:
+
+* `comm_trace`: I've not seen this output and it will only be dumped on a NCCL error.
+
+The recommended way to analyse the profile data is to use HolisticTraceAnalysis in a Jupyter notebook. We have a fork of the project with some helpful modifications:
+
+```bash
+uv pip install git+https://github.com/graphcore-research/HolisticTraceAnalysis-fork.git@improved-memory-analysis
+```
+
+A code sample that will do a lot of analysis and plots for you is:
+
+```python
+import hta.trace_analysis
+
+analyzer = hta.trace_analysis.TraceAnalysis(trace_dir = str(iteration_dir))
+time_spent_df = analyzer.get_temporal_breakdown()
+kernel_info = analyzer.get_gpu_kernel_breakdown()
+memory_events = analyzer.get_memory_timeline()
+categorised_memory_timelines, memory_events = analyzer.get_memory_timeline_per_category()
+# other analyses available in the  analyser object
+# Also check https://github.com/graphcore-research/HolisticTraceAnalysis-fork/tree/improved-memory-analysis/examples
+# and https://hta.readthedocs.io/en/latest/ for more tips
+```
+
+The profile traces can also be opened with TensorBoard in VS Code. Simply install the TensorBoard extension.
+
+See more tips and examples on Confluence in the [1CC performance report](https://graphcore.atlassian.net/wiki/spaces/AAI/pages/4005953678/LambdaLabs+1CC+GPU+cluster+report+feedback#Profile-analysis) and the
+[profiling how to guide](https://graphcore.atlassian.net/wiki/spaces/AAI/pages/4056973329/How+to+Analyse+profile+traces+generated+by+Torchtitan+WIP).
+
+### Problems with profiling
+
+The following limitations were identified:
+
+* Could not get the CUPTI counters to work to get very low level information (suspected H100 specific).

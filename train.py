@@ -16,6 +16,7 @@ def main():
     print("TRAINING go brrrrr!")
     config = JobConfig()
     config.parse_args()
+    config.dump()
 
     # W&B init for model metrics & checkpoint.
     low_bits_training.utils.wandb_init(

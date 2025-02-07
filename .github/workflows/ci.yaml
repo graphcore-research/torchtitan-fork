@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   lint_and_typecheck:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -30,7 +30,7 @@ jobs:
         uses: pre-commit/action@v3.0.0
 
   cpu-unit:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 10
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}

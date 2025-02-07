@@ -20,7 +20,7 @@ if [ $# -ne 0 ]; then
 fi
 
 # Generate a group ID
-export WAND_NAME="${WAND_NAME:-$(python scripts/random_name.py)}"
+export WANDB_NAME="${WANDB_NAME:-$(python scripts/random_name.py)}"
 export WANDB_GROUP_ID="${WANDB_GROUP_ID:-${WAND_NAME}}"
 torchrun --nproc_per_node=${NGPU} --rdzv_backend c10d --rdzv_endpoint="localhost:0" \
 --local-ranks-filter ${LOG_RANK} --role rank --tee 3 \
