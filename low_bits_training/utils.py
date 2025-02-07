@@ -8,6 +8,7 @@ import wandb
 from torchtitan.metrics import _get_metrics_rank
 from torchtitan.parallelisms.parallel_dims import ParallelDims
 
+
 from .config_manager import JobConfig
 
 
@@ -18,21 +19,40 @@ def job_config_to_config_dict(job_config: JobConfig) -> Dict[str, Dict[str, Any]
     This a hacky method of converting JobConfig to a ConfigDict that can
     cleanly be consumed by wandb.
     """
-    first_level_args = [
-        attr for attr in dir(job_config) if not (attr.startswith("_") or "parse" in attr)
-    ]
+    # Use the parser to extract all the arguments that are defined
+    first_level_args = {}
+    for action in job_config.parser._actions:
+        if action.dest == "help":
+            continue
+        first_level, second = action.dest.split(".", maxsplit=1)
+        second_levels = first_level_args.get(first_level, [])
+        second_levels.append(second)
+        first_level_args[first_level] = second_levels
+
     config_dict = {}
-    for arg1 in first_level_args:
+    for arg1, second_level_args in first_level_args.items():
         assert hasattr(job_config, arg1)
         config_dict[arg1] = {}
         second_level_config = getattr(job_config, arg1)
-        second_level_args = [
-            attr for attr in dir(second_level_config) if not attr.startswith("_")
-        ]
         for arg2 in second_level_args:
             assert hasattr(second_level_config, arg2)
             config_dict[arg1][arg2] = getattr(second_level_config, arg2)
     return config_dict
+
+
+def set_torch_compile_env_vars(dump_folder):
+    os.makedirs(dump_folder, exist_ok=True)
+    rank = os.getenv("RANK")
+    os.environ["TORCHINDUCTOR_CACHE_DIR"] = (
+        f"{dump_folder}/compile_details/inductor_cache_rank{rank}/"
+    )
+    os.environ["TORCHINDUCTOR_UNIQUE_KERNEL_NAMES"] = "1"
+    os.environ["TRITON_CACHE_DIR"] = (
+        f"{dump_folder}/compile_details/triton_cache_rank{rank}/"
+    )
+    os.environ["TORCH_COMPILE_DEBUG_DIR"] = (
+        f"{dump_folder}/compile_details/torch_compile_debug_rank{rank}/"
+    )
 
 
 def get_parallel_dims(job_config: JobConfig) -> ParallelDims:

@@ -8,7 +8,7 @@ import sys
 # TODO: check the directory exists?
 sys.path.append(os.path.dirname(__file__) + "/../torchtitan")
 
-
+from . import profiling  # noqa: F401, E402
 from . import datasets  # noqa: F401, E402
 from . import metrics  # noqa: F401, E402
 from . import models  # noqa: F401, E402
