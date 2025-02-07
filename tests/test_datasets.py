@@ -8,14 +8,27 @@ import re
 import logging
 
 from low_bits_training.config_manager import JobConfig
-import torchtitan.torchtitan.datasets.hf_datasets as hf_datasets
-from torchtitan.torchtitan.datasets.tokenizer import build_tokenizer
-from torchtitan.torchtitan.models import model_name_to_tokenizer
+import torchtitan.datasets.hf_datasets as hf_datasets
+from torchtitan.datasets.tokenizer import build_tokenizer
+from torchtitan.models import model_name_to_tokenizer
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_custom_dataset_parsing(caplog: pytest.LogCaptureFixture):
+@pytest.fixture()
+def tokenizer_path(tmp_path):
+    """downloads some tokenizer for testing"""
+    from huggingface_hub import hf_hub_download
+    tokenizer_path = "original/tokenizer.model"  # in the remote repo
+    hf_hub_download(
+        repo_id="meta-llama/Meta-Llama-3.1-8B",
+        filename=tokenizer_path,
+        local_dir=str(tmp_path),
+    )
+    return str(tmp_path / tokenizer_path)
+
+
+def test_custom_dataset_parsing(caplog: pytest.LogCaptureFixture, tokenizer_path):
     """ """
     job_config = JobConfig()
     c4_test_path = hf_datasets.DATASETS["c4_test"].path
@@ -25,7 +38,7 @@ def test_custom_dataset_parsing(caplog: pytest.LogCaptureFixture):
             "--training.dataset=slimpajama",
             f"--training.dataset_path={c4_test_path}",
             '--training.dataloading_args={"streaming": true}',
-            f"--model.tokenizer_path={REPO_ROOT}/torchtitan/torchtitan/datasets/tokenizer/original/tokenizer.model",
+            f"--model.tokenizer_path={tokenizer_path}",
         ]
     )
     model_name = job_config.model.name

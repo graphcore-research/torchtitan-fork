@@ -32,6 +32,8 @@ jobs:
   cpu-unit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

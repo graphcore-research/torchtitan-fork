@@ -10,7 +10,7 @@ from torchtitan.logging import logger
 
 # The import format here is important: doing a from import will mean the change
 # does not propagate
-import torchtitan.torchtitan.datasets.hf_datasets as hf_datasets
+import torchtitan.datasets.hf_datasets as hf_datasets
 
 
 def _load_slimpajama_dataset(dataset_path: str):
@@ -35,8 +35,8 @@ def _process_slimpajama_text(sample: Dict[str, Any]) -> str:
 
 
 # FIX path of TorchTitan datasets to absolute.
-tt_basedir = Path(__file__).resolve().parents[3] / "torchtitan"
-hf_datasets.DATASETS["c4_test"].path = str(tt_basedir / "test/assets/c4_test")
+tt_basedir = Path(__file__).resolve().parents[2] / "torchtitan"
+hf_datasets.DATASETS["c4_test"].path = str(tt_basedir / "tests/assets/c4_test")
 
 hf_datasets.DATASETS["slimpajama"] = hf_datasets.DatasetConfig(
     path="cerebras/SlimPajama-627B",
