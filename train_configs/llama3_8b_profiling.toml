@@ -40,8 +40,7 @@ data_parallel_replicate_degree = 1
 data_parallel_shard_degree = -1
 tensor_parallel_degree = 1
 compile = true
-dataset = "c4"
-dataloading_args='{"streaming": false, "verification_mode": "no_checks"}'
+dataset = "c4_test"
 
 [experimental]
 pipeline_parallel_degree = 1
