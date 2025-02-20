@@ -1,19 +1,29 @@
-import torch
-from collections import defaultdict
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
 import math
+from collections import defaultdict
+
+import torch
+
 
 def create_umup_adamw(parameters, **optimizer_kwargs):
 
     param_groups_by_inverse_scale = defaultdict(list)
 
-    base_lr = optimizer_kwargs['lr']
-    base_weight_decay = optimizer_kwargs['weight_decay']
-    
+    base_lr = optimizer_kwargs["lr"]
+    base_weight_decay = optimizer_kwargs["weight_decay"]
+
     for param in parameters:
 
         if param.lr_scale_formula == "1/sqrt(shape[1])":
             if len(param.shape) != 2:
-                raise ValueError("If LR scaling rule is 1/sqrt(fan-in), parameter tensor must have rank 2.")
+                raise ValueError(
+                    "If LR scaling rule is 1/sqrt(fan-in), parameter tensor must have rank 2."
+                )
             param_groups_by_inverse_scale[math.sqrt(param.shape[1])].append(param)
         elif param.lr_scale_formula == "1":
             param_groups_by_inverse_scale[1.0].append(param)
@@ -29,7 +39,7 @@ def create_umup_adamw(parameters, **optimizer_kwargs):
             "params": params,
             "lr": base_lr / lr_inverse_scale,
             "weight_decay": base_weight_decay / (base_lr / lr_inverse_scale),
-            **optimizer_kwargs
+            **optimizer_kwargs,
         }
         for lr_inverse_scale, params in param_groups_by_inverse_scale.items()
     ]

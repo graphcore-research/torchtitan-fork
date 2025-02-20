@@ -15,8 +15,10 @@ def cross_entropy_loss(pred, labels):
         pred.flatten(0, 1).float(), labels.flatten(0, 1)
     )
 
+
 # TODO: compiling this loss function causes CUDA errors, turning off for now
 # cross_entropy_loss = torch.compile(cross_entropy_loss)
+
 
 def umup_nll_loss(
     pred: torch.Tensor,
@@ -26,5 +28,5 @@ def umup_nll_loss(
     pred = pred.flatten(0, 1).float()
     labels = labels.flatten(0, 1).float()
     batch_size, _ = pred.shape
-    loss = torch.nn.functional.nll_loss(input, target, reduction='sum')
+    loss = torch.nn.functional.nll_loss(input, target, reduction="sum")
     return scale_fwd(loss, 1 / batch_size)

@@ -13,9 +13,9 @@ from typing import Optional, Tuple
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
 import unit_scaling as uu
+from torch import nn
 from unit_scaling import functional as U
 from unit_scaling.constraints import apply_constraint
 from unit_scaling.core.functional import logarithmic_interpolation
@@ -160,6 +160,7 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
         .reshape(bs, slen, n_kv_heads * n_rep, head_dim)
     )
 
+
 def scaled_dot_product_attention(
     query: torch.Tensor,
     key: torch.Tensor,
@@ -172,7 +173,8 @@ def scaled_dot_product_attention(
     *_, seq_len, d_head = value.shape
     # Empirical model of attention output std given mult and seq_len
     scale = (1 - dropout_p) ** 0.5 / logarithmic_interpolation(
-        alpha=1 / (1 + 4 * d_head / mult**2),  # = sigmoid(log(mult**2 / (4 * d_head)))
+        alpha=1
+        / (1 + 4 * d_head / mult**2),  # = sigmoid(log(mult**2 / (4 * d_head)))
         lower=((math.log(seq_len) if is_causal else 1) / seq_len) ** 0.5,
         upper=1.0,
     )
@@ -188,9 +190,11 @@ def scaled_dot_product_attention(
     )
     return scale_fwd(out, scale)
 
+
 class RotaryEmbed(nn.Module):
     def forward(self, xq, xk, freqs):
         return apply_rotary_emb(xq, xk, freqs)
+
 
 class Attention(nn.Module):
     """
@@ -283,7 +287,9 @@ class Attention(nn.Module):
         xk = keys.transpose(1, 2)  # (bs, n_local_heads, seqlen, head_dim)
         xv = values.transpose(1, 2)  # (bs, n_local_heads, seqlen, head_dim)
 
-        output = scaled_dot_product_attention(xq, xk, xv, is_causal=True, mult=self.alpha_attn_softmax)
+        output = scaled_dot_product_attention(
+            xq, xk, xv, is_causal=True, mult=self.alpha_attn_softmax
+        )
         output = output.transpose(
             1, 2
         ).contiguous()  # (bs, seqlen, n_local_heads, head_dim)
@@ -292,8 +298,10 @@ class Attention(nn.Module):
         output = self.wo(output)
         return output
 
+
 def _gated_swish(x, gate, mult):
     return F.sigmoid(x * mult) * x * gate
+
 
 def gated_swish(x, gate, mult):
     # Matches definition in u-muP paper
@@ -307,8 +315,8 @@ def gated_swish(x, gate, mult):
     out = _gated_swish(x, gate, mult)
     return scale_fwd(out, scale)
 
-class GatedSwish(nn.Module):
 
+class GatedSwish(nn.Module):
     def forward(self, silu_input, gate, alpha_ffn_act):
         return gated_swish(silu_input, gate, alpha_ffn_act)
 
@@ -336,7 +344,7 @@ class FeedForward(nn.Module):
         hidden_dim: int,
         multiple_of: int,
         ffn_dim_multiplier: Optional[float],
-        alpha_ffn_act: float
+        alpha_ffn_act: float,
     ):
         super().__init__()
         hidden_dim = int(2 * hidden_dim / 3)
@@ -400,33 +408,41 @@ class TransformerBlock(nn.Module):
             hidden_dim=4 * model_args.dim,
             multiple_of=model_args.multiple_of,
             ffn_dim_multiplier=model_args.ffn_dim_multiplier,
-            alpha_ffn_act=model_args.alpha_ffn_act
+            alpha_ffn_act=model_args.alpha_ffn_act,
         )
         self.layer_id = layer_id
         self.num_layers = model_args.n_layers
 
-        self.attention_norm = nn.RMSNorm(model_args.dim, eps=model_args.norm_eps, elementwise_affine=False)
-        self.ffn_norm = nn.RMSNorm(model_args.dim, eps=model_args.norm_eps, elementwise_affine=False)
+        self.attention_norm = nn.RMSNorm(
+            model_args.dim, eps=model_args.norm_eps, elementwise_affine=False
+        )
+        self.ffn_norm = nn.RMSNorm(
+            model_args.dim, eps=model_args.norm_eps, elementwise_affine=False
+        )
 
         # Compute residual scales based on Section G.2.2, Equations (25) - (31)
 
-        alpha_hat_f_squared = 2 / (model_args.alpha_res_attn_ratio ** 2 + 1) * model_args.alpha_res
-        alpha_hat_a_squared = model_args.alpha_res_attn_ratio ** 2 * alpha_hat_f_squared
+        alpha_hat_f_squared = (
+            2 / (model_args.alpha_res_attn_ratio**2 + 1) * model_args.alpha_res
+        )
+        alpha_hat_a_squared = model_args.alpha_res_attn_ratio**2 * alpha_hat_f_squared
 
         # L / 2 = number of transformer layers, each of which is an attention layer and an FFN
 
-        tau_squared_attn_denominator = \
-            model_args.n_layers + \
-            self.layer_id * alpha_hat_a_squared + \
-            self.layer_id * alpha_hat_f_squared
-        
+        tau_squared_attn_denominator = (
+            model_args.n_layers
+            + self.layer_id * alpha_hat_a_squared
+            + self.layer_id * alpha_hat_f_squared
+        )
+
         tau_squared_attn = alpha_hat_a_squared / tau_squared_attn_denominator
         self.tau_attn = math.sqrt(tau_squared_attn)
 
-        tau_squared_ffn_denominator = \
-            model_args.n_layers + \
-            (self.layer_id + 1) * alpha_hat_a_squared + \
-            self.layer_id * alpha_hat_f_squared
+        tau_squared_ffn_denominator = (
+            model_args.n_layers
+            + (self.layer_id + 1) * alpha_hat_a_squared
+            + self.layer_id * alpha_hat_f_squared
+        )
 
         tau_squared_ffn = alpha_hat_f_squared / tau_squared_ffn_denominator
         self.tau_ffn = math.sqrt(tau_squared_ffn)
@@ -448,7 +464,7 @@ class TransformerBlock(nn.Module):
 
         """
         x, attn_skip = U.residual_split(x, self.tau_attn)
-        x = self.attention_norm(x)     
+        x = self.attention_norm(x)
         attn_resid = self.attention(x, freqs_cis)
         attn_out = U.residual_add(attn_resid, attn_skip, self.tau_attn)
 
@@ -469,7 +485,7 @@ def readout_linear(input, weight, constraint, mult, weight_mup_type):
     fan_out, fan_in = weight.shape
     batch_size = input.numel() // fan_in
 
-    output_multiplier = mult * fan_in ** -1
+    output_multiplier = mult * fan_in**-1
     grad_input_multiplier = fan_out**-0.5
     grad_weight_multiplier = batch_size**-0.5
 
@@ -483,7 +499,6 @@ def readout_linear(input, weight, constraint, mult, weight_mup_type):
 
 
 class ReadoutLinear(nn.Module):
-    
     def __init__(self, in_features, out_features, bias=True, device=None, dtype=None):
 
         super().__init__()
@@ -492,8 +507,10 @@ class ReadoutLinear(nn.Module):
 
         if bias:
             raise ValueError("bias=True not yet supported for this class.")
-        
-        self.weight = nn.Parameter(torch.empty(out_features, in_features, **factory_kwargs))
+
+        self.weight = nn.Parameter(
+            torch.empty(out_features, in_features, **factory_kwargs)
+        )
 
         self.in_features = in_features
         self.out_features = out_features
@@ -508,15 +525,15 @@ class ReadoutLinear(nn.Module):
         self.reset_parameters()
         self.weight.lr_scale_formula = "1"
 
-    '''
+    """
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return readout_linear(x, self.weight, constraint=None, mult=1.0, )
-    '''
+    """
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
 
         # Different for readout
-        output_scale = self.in_features ** -1
+        output_scale = self.in_features**-1
         grad_input_scale = self.out_features ** (-1 / 2)
 
         weight_grad_reduction_length = x.numel() // self.in_features
@@ -528,7 +545,7 @@ class ReadoutLinear(nn.Module):
         output = scale_fwd(output, output_scale)
 
         return output
-    
+
     def extra_repr(self) -> str:
         return f"in_features={self.in_features}, out_features={self.out_features}"
 
@@ -586,7 +603,9 @@ class UmupTransformer(nn.Module, ModelProtocol):
         for layer_id in range(model_args.n_layers):
             self.layers[str(layer_id)] = TransformerBlock(layer_id, model_args)
 
-        self.norm = nn.RMSNorm(model_args.dim, eps=model_args.norm_eps, elementwise_affine=False)
+        self.norm = nn.RMSNorm(
+            model_args.dim, eps=model_args.norm_eps, elementwise_affine=False
+        )
 
         self.output = ReadoutLinear(model_args.dim, model_args.vocab_size, bias=False)
         self.output.weight.lr_scale_formula = "1"
