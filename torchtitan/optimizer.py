@@ -20,6 +20,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR, LRScheduler
 
 from torchtitan.config_manager import JobConfig
+from torchtitan.umup_optimizer import create_umup_adamw
 
 
 __all__ = [
@@ -37,6 +38,8 @@ def _create_optimizer(
         return torch.optim.Adam(parameters, **optimizer_kwargs)
     elif name == "AdamW":
         return torch.optim.AdamW(parameters, **optimizer_kwargs)
+    elif name == "UmupAdamW":
+        return create_umup_adamw(parameters, **optimizer_kwargs)
     else:
         raise NotImplementedError(f"Optimizer {name} not added.")
 
