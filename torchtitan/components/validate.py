@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Generator
+import os
 
 import torch
 import torch.nn as nn
@@ -20,6 +21,35 @@ from torchtitan.tools import utils
 from torchtitan.tools.logging import logger
 
 
+def _build_validation_dataloader(
+    job_config: JobConfig,
+    dp_world_size: int,
+    dp_rank: int,
+    tokenizer: BaseTokenizer,
+    infinite: bool,
+) -> BaseDataLoader:
+    dataset_name = job_config.validation.dataset.lower()
+    if dataset_name in {"packed-bin", "packed_binary", "token-packed"}:
+        from low_bits_training.datasets.packed_binary import (
+            build_packed_binary_validation_dataloader,
+        )
+
+        return build_packed_binary_validation_dataloader(
+            dp_world_size=dp_world_size,
+            dp_rank=dp_rank,
+            tokenizer=tokenizer,
+            job_config=job_config,
+            infinite=infinite,
+        )
+    return build_text_validation_dataloader(
+        job_config=job_config,
+        dp_world_size=dp_world_size,
+        dp_rank=dp_rank,
+        tokenizer=tokenizer,
+        infinite=infinite,
+    )
+
+
 class BaseValidator:
     def __init__(self, job_config: JobConfig):
         self.job_config = job_config
@@ -28,7 +58,8 @@ class BaseValidator:
         raise NotImplementedError("validate method not implemented")
 
     def should_validate(self, step: int) -> bool:
-        return step == 1 or step % self.job_config.validation.freq == 0
+        skip_step1 = os.environ.get("LBT_VALIDATION_SKIP_STEP1", "0") == "1"
+        return (step == 1 and not skip_step1) or step % self.job_config.validation.freq == 0
 
 
 class Validator(BaseValidator):
@@ -62,7 +93,7 @@ class Validator(BaseValidator):
         self.job_config = job_config
         self.parallel_dims = parallel_dims
         self.loss_fn = loss_fn
-        self.validation_dataloader = build_text_validation_dataloader(
+        self.validation_dataloader = _build_validation_dataloader(
             job_config=job_config,
             dp_world_size=dp_world_size,
             dp_rank=dp_rank,
@@ -88,9 +119,11 @@ class Validator(BaseValidator):
         model_parts: list[nn.Module],
         step: int,
     ) -> None:
-        # Set model to eval mode
-        for model in model_parts:
-            model.eval()
+        keep_train_mode = os.environ.get("LBT_VALIDATION_KEEP_TRAIN_MODE", "0") == "1"
+        if not keep_train_mode:
+            # Set model to eval mode.
+            for model in model_parts:
+                model.eval()
 
         parallel_dims = self.parallel_dims
 
@@ -174,9 +207,10 @@ class Validator(BaseValidator):
 
         self.metrics_processor.log_validation(loss=global_avg_loss, step=step)
 
-        # Set model back to train mode
-        for model in model_parts:
-            model.train()
+        if not keep_train_mode:
+            # Set model back to train mode.
+            for model in model_parts:
+                model.train()
 
 
 def build_validator(

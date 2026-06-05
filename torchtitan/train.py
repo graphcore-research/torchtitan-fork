@@ -7,6 +7,7 @@
 import importlib
 import os
 import time
+from contextlib import nullcontext
 from datetime import timedelta
 from typing import Any, Generator, Iterable
 
@@ -662,7 +663,9 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful):
                     self.job_config.validation.enable
                     and self.validator.should_validate(self.step)
                 ):
-                    with self.loss_fn.no_rescale():
+                    validation_loss_fn = getattr(self.validator, "loss_fn", self.loss_fn)
+                    no_rescale = getattr(validation_loss_fn, "no_rescale", None)
+                    with no_rescale() if callable(no_rescale) else nullcontext():
                         self.validator.validate(self.model_parts, self.step)
 
                 # signal the profiler that the next profiling step has started

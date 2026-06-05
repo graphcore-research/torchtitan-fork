@@ -31,7 +31,7 @@ def precompute_freqs_cis(
     dim: int,
     end: int,
     theta: float = 10000.0,
-    scaling_args: RoPEScalingArgs = RoPEScalingArgs(),
+    scaling_args: RoPEScalingArgs | None = RoPEScalingArgs(),
 ) -> torch.Tensor:
     """
     Precompute the frequency tensor for complex exponentials (cis) with given dimensions.
@@ -58,26 +58,27 @@ def precompute_freqs_cis(
     """
     freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
 
-    # apply rope scaling
-    scaling_factor = scaling_args.scaling_factor
-    low_freq_factor = scaling_args.low_freq_factor
-    high_freq_factor = scaling_args.high_freq_factor
-    original_max_position_embeddings = scaling_args.original_max_position_embeddings
-    wavelen = 2 * math.pi / freqs
-    high_freq_wavelen = original_max_position_embeddings / high_freq_factor
-    low_freq_wavelen = original_max_position_embeddings / low_freq_factor
-    # wavelen < high_freq_wavelen: do nothing
-    # wavelen > low_freq_wavelen: divide by scaling factor
-    freqs = torch.where(wavelen > low_freq_wavelen, freqs / scaling_factor, freqs)
-    # wavelen in between: linear interpolation of the scaled freqs and the original freqs
-    smooth_factor = (original_max_position_embeddings / wavelen - low_freq_factor) / (
-        high_freq_factor - low_freq_factor
-    )
-    smoothed_freqs = (
-        1 - smooth_factor
-    ) * freqs / scaling_factor + smooth_factor * freqs
-    is_medium_freqs = ~(wavelen < high_freq_wavelen) * ~(wavelen > low_freq_wavelen)
-    freqs = torch.where(is_medium_freqs, smoothed_freqs, freqs)
+    if scaling_args is not None:
+        # apply rope scaling
+        scaling_factor = scaling_args.scaling_factor
+        low_freq_factor = scaling_args.low_freq_factor
+        high_freq_factor = scaling_args.high_freq_factor
+        original_max_position_embeddings = scaling_args.original_max_position_embeddings
+        wavelen = 2 * math.pi / freqs
+        high_freq_wavelen = original_max_position_embeddings / high_freq_factor
+        low_freq_wavelen = original_max_position_embeddings / low_freq_factor
+        # wavelen < high_freq_wavelen: do nothing
+        # wavelen > low_freq_wavelen: divide by scaling factor
+        freqs = torch.where(wavelen > low_freq_wavelen, freqs / scaling_factor, freqs)
+        # wavelen in between: linear interpolation of the scaled freqs and the original freqs
+        smooth_factor = (original_max_position_embeddings / wavelen - low_freq_factor) / (
+            high_freq_factor - low_freq_factor
+        )
+        smoothed_freqs = (
+            1 - smooth_factor
+        ) * freqs / scaling_factor + smooth_factor * freqs
+        is_medium_freqs = ~(wavelen < high_freq_wavelen) * ~(wavelen > low_freq_wavelen)
+        freqs = torch.where(is_medium_freqs, smoothed_freqs, freqs)
 
     t = torch.arange(end, device=freqs.device)
     freqs = torch.outer(t, freqs).float()
