@@ -537,6 +537,12 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful):
         self, data_iterator: Iterable[tuple[dict[str, torch.Tensor], torch.Tensor]]
     ):
         self.optimizers.zero_grad()
+        manual_grad_allreduce = os.getenv("TORCHTITAN_MANUAL_GRAD_ALLREDUCE", "0") == "1"
+        if manual_grad_allreduce:
+            for model_part in self.model_parts:
+                if hasattr(model_part, "set_requires_gradient_sync"):
+                    model_part.set_requires_gradient_sync(False)
+
         # Save the current step learning rate for logging
         lr = self.lr_schedulers.schedulers[0].get_last_lr()[0]
 
@@ -552,15 +558,28 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful):
             loss = self.forward_backward_step(input_dict, labels)
             accumulated_losses.append(loss.detach())
 
-        grad_norm = dist_utils.clip_grad_norm_(
-            [p for m in self.model_parts for p in m.parameters()],
-            self.job_config.training.max_norm,
-            foreach=True,
-            pp_mesh=(
-                parallel_dims.world_mesh["pp"] if parallel_dims.pp_enabled else None
-            ),
-            ep_enabled=parallel_dims.ep_enabled,
-        )
+        if manual_grad_allreduce and torch.distributed.is_initialized():
+            torch.cuda.synchronize(self.device)
+            world_size = torch.distributed.get_world_size()
+            if world_size > 1:
+                for model_part in self.model_parts:
+                    for param in model_part.parameters():
+                        if param.grad is not None:
+                            torch.distributed.all_reduce(param.grad)
+                            param.grad.div_(world_size)
+
+        if os.getenv("TORCHTITAN_SKIP_GRAD_CLIP", "0") == "1":
+            grad_norm = torch.tensor(float("nan"), device=self.device)
+        else:
+            grad_norm = dist_utils.clip_grad_norm_(
+                [p for m in self.model_parts for p in m.parameters()],
+                self.job_config.training.max_norm,
+                foreach=True,
+                pp_mesh=(
+                    parallel_dims.world_mesh["pp"] if parallel_dims.pp_enabled else None
+                ),
+                ep_enabled=parallel_dims.ep_enabled,
+            )
         self.checkpointer.maybe_wait_for_staging()
         self.optimizers.step()
         self.lr_schedulers.step()

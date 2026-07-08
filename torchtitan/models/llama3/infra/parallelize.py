@@ -7,6 +7,8 @@
 # This file applies the PT-D parallelisms (except pipeline parallelism) and various
 # training techniques (e.g. activation checkpointing and compile) to the Llama model.
 
+import os
+
 import torch
 import torch.nn as nn
 from torch.distributed._composable.replicate import replicate
@@ -325,6 +327,19 @@ def apply_ddp(
     if enable_compile:
         torch._dynamo.config.optimize_ddp = "ddp_optimizer"
 
-    replicate(model, device_mesh=dp_mesh, bucket_cap_mb=100)
+    find_unused_parameters = os.getenv("TORCHTITAN_DDP_FIND_UNUSED_PARAMETERS", "0") == "1"
+    bucket_cap_mb = int(os.getenv("TORCHTITAN_DDP_BUCKET_CAP_MB", "100"))
+    static_graph = os.getenv("TORCHTITAN_DDP_STATIC_GRAPH", "0") == "1"
+    gradient_as_bucket_view = (
+        os.getenv("TORCHTITAN_DDP_GRADIENT_AS_BUCKET_VIEW", "0") == "1"
+    )
+    replicate(
+        model,
+        device_mesh=dp_mesh,
+        bucket_cap_mb=bucket_cap_mb,
+        find_unused_parameters=find_unused_parameters,
+        static_graph=static_graph,
+        gradient_as_bucket_view=gradient_as_bucket_view,
+    )
 
     logger.info("Applied DDP to the model")
