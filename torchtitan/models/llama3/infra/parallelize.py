@@ -278,6 +278,11 @@ def apply_fsdp(
 
     """
     mp_policy = MixedPrecisionPolicy(param_dtype=param_dtype, reduce_dtype=reduce_dtype)
+    preserve_input_dtype_mp_policy = MixedPrecisionPolicy(
+        param_dtype=param_dtype,
+        reduce_dtype=reduce_dtype,
+        cast_forward_inputs=False,
+    )
     fsdp_config = {"mesh": dp_mesh, "mp_policy": mp_policy}
     if cpu_offload:
         fsdp_config["offload_policy"] = CPUOffloadPolicy()
@@ -303,9 +308,19 @@ def apply_fsdp(
             reshard_after_forward=reshard_after_forward,
         )
     for layer_id, transformer_block in model.layers.items():
+        layer_fsdp_config = fsdp_config
+        if getattr(
+            transformer_block,
+            "_fsdp_preserve_forward_input_dtypes",
+            False,
+        ):
+            layer_fsdp_config = {
+                **fsdp_config,
+                "mp_policy": preserve_input_dtype_mp_policy,
+            }
         fully_shard(
             transformer_block,
-            **fsdp_config,
+            **layer_fsdp_config,
             reshard_after_forward=reshard_after_forward,
         )
     # As an optimization, do not reshard_after_forward the last layers by default
