@@ -35,6 +35,24 @@ from torchtitan.tools.profiling import (
 )
 
 
+def _guard_fsdp_accumulation_for_unused_params() -> None:
+    from torch.distributed.fsdp._fully_shard._fsdp_param import FSDPParam
+
+    original = FSDPParam.to_accumulated_grad_if_needed
+    if getattr(original, "_torchtitan_unused_param_guard", False):
+        return
+
+    def guarded_to_accumulated_grad_if_needed(fsdp_param: FSDPParam) -> None:
+        if not hasattr(fsdp_param, "_unsharded_param"):
+            return
+        original(fsdp_param)
+
+    guarded_to_accumulated_grad_if_needed._torchtitan_unused_param_guard = True
+    FSDPParam.to_accumulated_grad_if_needed = (
+        guarded_to_accumulated_grad_if_needed
+    )
+
+
 class Trainer(torch.distributed.checkpoint.stateful.Stateful):
     # core configs
     job_config: JobConfig
@@ -551,6 +569,8 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful):
                 "TORCHTITAN_MANUAL_GRAD_ALLREDUCE and "
                 "TORCHTITAN_FSDP_ACCUMULATE_WITHOUT_SYNC are mutually exclusive"
             )
+        if accumulate_without_sync:
+            _guard_fsdp_accumulation_for_unused_params()
         if manual_grad_allreduce:
             for model_part in self.model_parts:
                 if hasattr(model_part, "set_requires_gradient_sync"):
