@@ -336,45 +336,67 @@ def apply_fsdp(
     if os.getenv("TORCHTITAN_FSDP_EXPLICIT_PREFETCH", "0") != "1":
         return
 
+    prefetch_depth_raw = os.getenv("TORCHTITAN_FSDP_PREFETCH_DEPTH", "1")
+    try:
+        prefetch_depth = int(prefetch_depth_raw)
+    except ValueError as exc:
+        raise ValueError(
+            "TORCHTITAN_FSDP_PREFETCH_DEPTH must be an integer, "
+            f"got {prefetch_depth_raw!r}"
+        ) from exc
+    if not 1 <= prefetch_depth <= 4:
+        raise ValueError(
+            "TORCHTITAN_FSDP_PREFETCH_DEPTH must be between 1 and 4, "
+            f"got {prefetch_depth}"
+        )
+
     transformer_blocks = list(model.layers.values())
     if not transformer_blocks:
         return
 
     if model.tok_embeddings is not None:
         model.tok_embeddings.set_modules_to_forward_prefetch(
-            [transformer_blocks[0]]
+            transformer_blocks[:prefetch_depth]
         )
 
     for index, transformer_block in enumerate(transformer_blocks):
-        if index + 1 < len(transformer_blocks):
-            transformer_block.set_modules_to_forward_prefetch(
-                [transformer_blocks[index + 1]]
-            )
-        elif model.norm is not None and model.output is not None:
-            transformer_block.set_modules_to_forward_prefetch(
-                [model.norm, model.output]
-            )
+        modules_to_prefetch = transformer_blocks[
+            index + 1 : index + 1 + prefetch_depth
+        ]
+        if (
+            len(modules_to_prefetch) < prefetch_depth
+            and model.norm is not None
+            and model.output is not None
+        ):
+            # norm and output share one FSDP parameter group.
+            modules_to_prefetch.append(model.norm)
+        if modules_to_prefetch:
+            transformer_block.set_modules_to_forward_prefetch(modules_to_prefetch)
 
     if reshard_after_forward:
         reversed_transformer_blocks = list(reversed(transformer_blocks))
         if model.norm is not None and model.output is not None:
             model.output.set_modules_to_backward_prefetch(
-                [reversed_transformer_blocks[0]]
+                reversed_transformer_blocks[:prefetch_depth]
             )
 
         for index, transformer_block in enumerate(reversed_transformer_blocks):
-            if index + 1 < len(reversed_transformer_blocks):
+            modules_to_prefetch = reversed_transformer_blocks[
+                index + 1 : index + 1 + prefetch_depth
+            ]
+            if (
+                len(modules_to_prefetch) < prefetch_depth
+                and model.tok_embeddings is not None
+            ):
+                modules_to_prefetch.append(model.tok_embeddings)
+            if modules_to_prefetch:
                 transformer_block.set_modules_to_backward_prefetch(
-                    [reversed_transformer_blocks[index + 1]]
-                )
-            elif model.tok_embeddings is not None:
-                transformer_block.set_modules_to_backward_prefetch(
-                    [model.tok_embeddings]
+                    modules_to_prefetch
                 )
 
     logger.info(
         "Applied explicit FSDP prefetch chain "
-        f"(backward={reshard_after_forward})"
+        f"(depth={prefetch_depth}, backward={reshard_after_forward})"
     )
 
 
