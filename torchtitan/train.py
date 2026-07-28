@@ -538,6 +538,19 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful):
     ):
         self.optimizers.zero_grad()
         manual_grad_allreduce = os.getenv("TORCHTITAN_MANUAL_GRAD_ALLREDUCE", "0") == "1"
+        accumulate_without_sync = (
+            os.getenv("TORCHTITAN_FSDP_ACCUMULATE_WITHOUT_SYNC", "0") == "1"
+            and self.gradient_accumulation_steps > 1
+        )
+        retain_params_between_microbatches = (
+            os.getenv("TORCHTITAN_FSDP_ACCUMULATE_RETAIN_PARAMS", "0") == "1"
+            and accumulate_without_sync
+        )
+        if manual_grad_allreduce and accumulate_without_sync:
+            raise RuntimeError(
+                "TORCHTITAN_MANUAL_GRAD_ALLREDUCE and "
+                "TORCHTITAN_FSDP_ACCUMULATE_WITHOUT_SYNC are mutually exclusive"
+            )
         if manual_grad_allreduce:
             for model_part in self.model_parts:
                 if hasattr(model_part, "set_requires_gradient_sync"):
@@ -553,10 +566,34 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful):
         accumulated_losses = []
         # If data runs out during gradient accumulation, that
         # entire step will not be executed.
-        for _microbatch in range(self.gradient_accumulation_steps):
-            input_dict, labels = next(data_iterator)
-            loss = self.forward_backward_step(input_dict, labels)
-            accumulated_losses.append(loss.detach())
+        try:
+            for microbatch in range(self.gradient_accumulation_steps):
+                if accumulate_without_sync:
+                    is_last_microbatch = (
+                        microbatch + 1 == self.gradient_accumulation_steps
+                    )
+                    for model_part in self.model_parts:
+                        if hasattr(model_part, "set_requires_gradient_sync"):
+                            model_part.set_requires_gradient_sync(is_last_microbatch)
+                        if (
+                            retain_params_between_microbatches
+                            and hasattr(model_part, "set_reshard_after_backward")
+                        ):
+                            model_part.set_reshard_after_backward(is_last_microbatch)
+
+                input_dict, labels = next(data_iterator)
+                loss = self.forward_backward_step(input_dict, labels)
+                accumulated_losses.append(loss.detach())
+        finally:
+            if accumulate_without_sync:
+                for model_part in self.model_parts:
+                    if hasattr(model_part, "set_requires_gradient_sync"):
+                        model_part.set_requires_gradient_sync(True)
+                    if (
+                        retain_params_between_microbatches
+                        and hasattr(model_part, "set_reshard_after_backward")
+                    ):
+                        model_part.set_reshard_after_backward(True)
 
         if manual_grad_allreduce and torch.distributed.is_initialized():
             torch.cuda.synchronize(self.device)
