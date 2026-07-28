@@ -333,6 +333,50 @@ def apply_fsdp(
         )
     fully_shard(model, **fsdp_config)
 
+    if os.getenv("TORCHTITAN_FSDP_EXPLICIT_PREFETCH", "0") != "1":
+        return
+
+    transformer_blocks = list(model.layers.values())
+    if not transformer_blocks:
+        return
+
+    if model.tok_embeddings is not None:
+        model.tok_embeddings.set_modules_to_forward_prefetch(
+            [transformer_blocks[0]]
+        )
+
+    for index, transformer_block in enumerate(transformer_blocks):
+        if index + 1 < len(transformer_blocks):
+            transformer_block.set_modules_to_forward_prefetch(
+                [transformer_blocks[index + 1]]
+            )
+        elif model.norm is not None and model.output is not None:
+            transformer_block.set_modules_to_forward_prefetch(
+                [model.norm, model.output]
+            )
+
+    if reshard_after_forward:
+        reversed_transformer_blocks = list(reversed(transformer_blocks))
+        if model.norm is not None and model.output is not None:
+            model.output.set_modules_to_backward_prefetch(
+                [reversed_transformer_blocks[0]]
+            )
+
+        for index, transformer_block in enumerate(reversed_transformer_blocks):
+            if index + 1 < len(reversed_transformer_blocks):
+                transformer_block.set_modules_to_backward_prefetch(
+                    [reversed_transformer_blocks[index + 1]]
+                )
+            elif model.tok_embeddings is not None:
+                transformer_block.set_modules_to_backward_prefetch(
+                    [model.tok_embeddings]
+                )
+
+    logger.info(
+        "Applied explicit FSDP prefetch chain "
+        f"(backward={reshard_after_forward})"
+    )
+
 
 def apply_ddp(
     model: nn.Module,
