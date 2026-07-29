@@ -385,6 +385,54 @@ class MetricsProcessor:
     def should_log(self, step: int) -> bool:
         return step == 1 or step % self.job_config.metrics.log_freq == 0
 
+    def _distributed_timing_metrics(
+        self,
+        time_end_to_end: float,
+        time_data_loading: float,
+    ) -> dict[str, float | int]:
+        if (
+            os.getenv("TORCHTITAN_DISTRIBUTED_TIMING", "0") != "1"
+            or not torch.distributed.is_initialized()
+            or torch.distributed.get_world_size() == 1
+        ):
+            return {}
+
+        world_size = torch.distributed.get_world_size()
+        local_timings = torch.tensor(
+            [time_end_to_end, time_data_loading],
+            dtype=torch.float32,
+            device=device_type,
+        )
+        gathered_timings = torch.empty(
+            world_size * local_timings.numel(),
+            dtype=local_timings.dtype,
+            device=local_timings.device,
+        )
+        torch.distributed.all_gather_into_tensor(
+            gathered_timings,
+            local_timings,
+        )
+        gathered_timings = gathered_timings.view(world_size, -1)
+        step_times = gathered_timings[:, 0]
+        data_loading_times = gathered_timings[:, 1]
+
+        return {
+            "time_metrics/distributed_end_to_end_max(s)": step_times.max().item(),
+            "time_metrics/distributed_end_to_end_min(s)": step_times.min().item(),
+            "time_metrics/distributed_end_to_end_spread(s)": (
+                step_times.max() - step_times.min()
+            ).item(),
+            "time_metrics/distributed_data_loading_max(s)": (
+                data_loading_times.max().item()
+            ),
+            "time_metrics/distributed_data_loading_mean(s)": (
+                data_loading_times.mean().item()
+            ),
+            "time_metrics/distributed_data_loading_slowest_rank": (
+                data_loading_times.argmax().item()
+            ),
+        }
+
     def log(
         self,
         step: int,
@@ -430,6 +478,12 @@ class MetricsProcessor:
             "memory/num_alloc_retries": device_mem_stats.num_alloc_retries,
             "memory/num_ooms": device_mem_stats.num_ooms,
         }
+        metrics.update(
+            self._distributed_timing_metrics(
+                time_end_to_end,
+                time_data_loading,
+            )
+        )
 
         if extra_metrics:
             metrics.update(extra_metrics)
